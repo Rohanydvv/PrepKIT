@@ -1,0 +1,39 @@
+services:
+  # Backend Express API Service
+  - type: web
+    name: prepkit-backend
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm run dev:server
+    envVars:
+      - key: PORT
+        value: 5000
+      - key: NODE_ENV
+        value: production
+      - key: ALLOW_LOCAL_URLS
+        value: "true"
+      - key: JWT_SECRET
+        generateValue: true
+      - key: LLM_PROVIDER
+        value: gemini
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-2.0-flash
+
+  # Frontend Next.js Service
+  - type: web
+    name: prepkit-frontend
+    env: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: BACKEND_API_URL
+        fromService:
+          type: web
+          name: prepkit-backend
+          property: host
