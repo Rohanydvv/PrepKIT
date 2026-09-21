@@ -1,37 +1,15 @@
 import mongoose from "mongoose";
 import fs from "fs";
 import path from "path";
-import { InterviewKit } from "../core/types.js";
+import {
+  InterviewKit,
+  UserRecord,
+  StoredKitRecord,
+  CardReviewData,
+  PracticeSessionRecord,
+} from "../core/types.js";
 
-export interface UserRecord {
-  id: string;
-  email: string;
-  passwordHash: string;
-  createdAt: string;
-}
-
-export interface StoredKitRecord {
-  id: string;
-  userId: string;
-  kit: InterviewKit;
-  meta: Record<string, { provenance: "generated" | "edited" | "manual"; is_pinned: boolean }>;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface CardReviewData {
-  confidence: number; // 1, 2, or 3
-  reviewedAt: string;
-  reviewCount: number;
-}
-
-export interface PracticeSessionRecord {
-  id: string;
-  userId: string;
-  kitId: string;
-  cards: Record<string, CardReviewData>;
-  updatedAt: string;
-}
+export type { UserRecord, StoredKitRecord, CardReviewData, PracticeSessionRecord };
 
 /**
  * File-based embedded fallback storage for zero-dependency local runs.

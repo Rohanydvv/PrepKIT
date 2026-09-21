@@ -95,7 +95,8 @@ app.get("/api/kits", requireAuth, (req: AuthenticatedRequest, res: Response) => 
 // Get single kit
 app.get("/api/kits/:id", requireAuth, (req: AuthenticatedRequest, res: Response) => {
   const userId = req.user!.id;
-  const record = embeddedStore.findKitById(req.params.id);
+  const kitId = String(req.params.id);
+  const record = embeddedStore.findKitById(kitId);
 
   if (!record || record.userId !== userId) {
     res.status(404).json({ error: "Kit not found" });
@@ -214,7 +215,8 @@ app.get("/api/kits/generate-stream", requireAuth, async (req: AuthenticatedReque
 // Update kit (Builder changes: edits, reorder, additions, pinning)
 app.put("/api/kits/:id", requireAuth, (req: AuthenticatedRequest, res: Response) => {
   const userId = req.user!.id;
-  const existing = embeddedStore.findKitById(req.params.id);
+  const kitId = String(req.params.id);
+  const existing = embeddedStore.findKitById(kitId);
 
   if (!existing || existing.userId !== userId) {
     res.status(404).json({ error: "Kit not found" });
@@ -243,14 +245,15 @@ app.put("/api/kits/:id", requireAuth, (req: AuthenticatedRequest, res: Response)
 // Delete kit
 app.delete("/api/kits/:id", requireAuth, (req: AuthenticatedRequest, res: Response) => {
   const userId = req.user!.id;
-  const existing = embeddedStore.findKitById(req.params.id);
+  const kitId = String(req.params.id);
+  const existing = embeddedStore.findKitById(kitId);
 
   if (!existing || existing.userId !== userId) {
     res.status(404).json({ error: "Kit not found" });
     return;
   }
 
-  embeddedStore.deleteKit(req.params.id);
+  embeddedStore.deleteKit(kitId);
   res.json({ message: "Kit deleted successfully" });
 });
 
@@ -259,7 +262,8 @@ app.delete("/api/kits/:id", requireAuth, (req: AuthenticatedRequest, res: Respon
 // ---------------------------------------------------------------------------
 app.post("/api/kits/:id/regenerate-section", requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   const userId = req.user!.id;
-  const record = embeddedStore.findKitById(req.params.id);
+  const kitId = String(req.params.id);
+  const record = embeddedStore.findKitById(kitId);
 
   if (!record || record.userId !== userId) {
     res.status(404).json({ error: "Kit not found" });
@@ -369,17 +373,18 @@ app.post("/api/kits/:id/regenerate-section", requireAuth, async (req: Authentica
 // ---------------------------------------------------------------------------
 app.get("/api/kits/:id/practice", requireAuth, (req: AuthenticatedRequest, res: Response) => {
   const userId = req.user!.id;
-  const record = embeddedStore.findKitById(req.params.id);
+  const kitId = String(req.params.id);
+  const record = embeddedStore.findKitById(kitId);
 
   if (!record || record.userId !== userId) {
     res.status(404).json({ error: "Kit not found" });
     return;
   }
 
-  const session = embeddedStore.findPracticeSession(userId, req.params.id) || {
+  const session = embeddedStore.findPracticeSession(userId, kitId) || {
     id: `ps_${crypto.randomUUID()}`,
     userId,
-    kitId: req.params.id,
+    kitId,
     cards: {},
     updatedAt: new Date().toISOString(),
   };
@@ -412,6 +417,7 @@ app.get("/api/kits/:id/practice", requireAuth, (req: AuthenticatedRequest, res: 
 
 app.post("/api/kits/:id/practice/record", requireAuth, (req: AuthenticatedRequest, res: Response) => {
   const userId = req.user!.id;
+  const kitId = String(req.params.id);
   const { cardId, confidence } = req.body;
 
   if (!cardId || ![1, 2, 3].includes(confidence)) {
@@ -419,12 +425,12 @@ app.post("/api/kits/:id/practice/record", requireAuth, (req: AuthenticatedReques
     return;
   }
 
-  let session = embeddedStore.findPracticeSession(userId, req.params.id);
+  let session = embeddedStore.findPracticeSession(userId, kitId);
   if (!session) {
     session = {
       id: `ps_${crypto.randomUUID()}`,
       userId,
-      kitId: req.params.id,
+      kitId,
       cards: {},
       updatedAt: new Date().toISOString(),
     };

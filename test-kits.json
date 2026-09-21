@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "generated_at": "2026-09-21T19:13:23.789Z",
+  "generated_at": "2026-09-21T19:21:46.958Z",
   "kits": [
     {
       "id": "case-01",
@@ -9,10 +9,10 @@
         "source": {
           "company": "PostHog – We make your product self",
           "company_url": "https://posthog.com/",
-          "role": "<untrusted_content_job_description>",
+          "role": "Senior Backend Engineer",
           "location": "Unspecified",
           "jd_chars": 463,
-          "researched_at": "2026-09-21T19:13:17.323Z",
+          "researched_at": "2026-09-21T19:21:41.750Z",
           "pages_used": [
             "https://posthog.com/",
             "https://posthog.com/careers",
@@ -29,7 +29,7 @@
           ]
         },
         "role": {
-          "title": "<untrusted_content_job_description>",
+          "title": "Senior Backend Engineer",
           "seniority": "Senior",
           "responsibilities": [
             "Build and architect core systems for the role",
@@ -207,10 +207,10 @@
         "source": {
           "company": "GitHub · Change is constant. GitHub keeps you ahead. · GitHub",
           "company_url": "https://github.com/",
-          "role": "<untrusted_content_job_description>",
+          "role": "Full-Stack Software Engineer",
           "location": "Unspecified",
           "jd_chars": 342,
-          "researched_at": "2026-09-21T19:13:18.774Z",
+          "researched_at": "2026-09-21T19:21:43.318Z",
           "pages_used": [
             "https://github.com/",
             "https://github.com/customer-stories/figma"
@@ -225,7 +225,7 @@
           ]
         },
         "role": {
-          "title": "<untrusted_content_job_description>",
+          "title": "Full-Stack Software Engineer",
           "seniority": "Mid-Level",
           "responsibilities": [
             "Build and architect core systems for the role",
@@ -382,10 +382,10 @@
         "source": {
           "company": "Welcome to Python.org",
           "company_url": "https://python.org/",
-          "role": "<untrusted_content_job_description>",
+          "role": "Junior Web Developer",
           "location": "Unspecified",
           "jd_chars": 122,
-          "researched_at": "2026-09-21T19:13:20.687Z",
+          "researched_at": "2026-09-21T19:21:44.187Z",
           "pages_used": [
             "https://python.org/",
             "https://python.org/jobs/",
@@ -402,7 +402,7 @@
           ]
         },
         "role": {
-          "title": "<untrusted_content_job_description>",
+          "title": "Junior Web Developer",
           "seniority": "Junior",
           "responsibilities": [
             "Build and architect core systems for the role",
@@ -513,10 +513,10 @@
         "source": {
           "company": "Stripe",
           "company_url": "https://stripe.com/",
-          "role": "<untrusted_content_job_description>",
+          "role": "Staff Systems Architect",
           "location": "Unspecified",
           "jd_chars": 276,
-          "researched_at": "2026-09-21T19:13:23.788Z",
+          "researched_at": "2026-09-21T19:21:46.956Z",
           "pages_used": [
             "https://stripe.com/",
             "https://stripe.com/in/careers",
@@ -533,7 +533,7 @@
           ]
         },
         "role": {
-          "title": "<untrusted_content_job_description>",
+          "title": "Staff Systems Architect",
           "seniority": "Senior",
           "responsibilities": [
             "Build and architect core systems for the role",

@@ -118,6 +118,36 @@ export interface ItemMetadata {
 export type BuilderQuestion = Question & ItemMetadata;
 export type BuilderFlashcard = Flashcard & ItemMetadata;
 
+export interface UserRecord {
+  id: string;
+  email: string;
+  passwordHash: string;
+  createdAt: string;
+}
+
+export interface StoredKitRecord {
+  id: string;
+  userId: string;
+  kit: InterviewKit;
+  meta: Record<string, { provenance: ItemProvenance; is_pinned: boolean }>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CardReviewData {
+  confidence: number;
+  reviewedAt: string;
+  reviewCount: number;
+}
+
+export interface PracticeSessionRecord {
+  id: string;
+  userId: string;
+  kitId: string;
+  cards: Record<string, CardReviewData>;
+  updatedAt: string;
+}
+
 // ==============================================================================
 // Appendix B - Batch Input and Output Schemas and Types
 // ==============================================================================
