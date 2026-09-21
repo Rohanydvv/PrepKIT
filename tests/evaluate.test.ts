@@ -82,7 +82,7 @@ Requirements:
     // Using a non-existent domain to trigger unreachable failure
     const kit = await generateInterviewPrepKit({
       jd: sampleJd,
-      company_url: "https://non-existent-domain-12345-trao-test.org",
+      company_url: "https://non-existent-domain-12345-prepkit-test.org",
       days: 3,
     });
 

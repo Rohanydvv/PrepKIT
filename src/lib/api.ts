@@ -52,11 +52,11 @@ export const api = {
       });
     },
     async demoLogin() {
-      // Helper for instant evaluator access
+      // Helper for instant demo access
       try {
-        return await this.login("reviewer@trao.io", "evaluation2026");
+        return await this.login("demo@prepkit.io", "prepkitdemo2026");
       } catch {
-        return await this.register("reviewer@trao.io", "evaluation2026");
+        return await this.register("demo@prepkit.io", "prepkitdemo2026");
       }
     },
   },

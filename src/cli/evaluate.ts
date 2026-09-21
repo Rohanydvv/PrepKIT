@@ -45,7 +45,7 @@ async function runBatchEvaluation() {
   const { inputPath, outputPath } = parseCliArgs();
 
   console.log(`\n======================================================`);
-  console.log(` Trao AI Interview Prep Kit - Batch Evaluation Runner `);
+  console.log(` PrepKIT - Batch Processing & Evaluation Runner `);
   console.log(`======================================================\n`);
   console.log(`Input cases file:  ${inputPath}`);
   console.log(`Output kits file: ${outputPath}`);

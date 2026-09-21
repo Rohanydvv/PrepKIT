@@ -51,7 +51,7 @@ export function Navbar({ kitId }: { kitId?: string }) {
                   PrepKit<span className="text-brand-600">.AI</span>
                 </span>
                 <span className="hidden sm:inline-block ml-2 text-[10px] uppercase font-bold tracking-widest bg-brand-50 text-brand-700 px-1.5 py-0.5 rounded border border-brand-200">
-                  Trao FS-AI
+                  AI Platform
                 </span>
               </div>
             </Link>

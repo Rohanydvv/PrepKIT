@@ -61,7 +61,7 @@ export default function LoginPage() {
         </div>
 
         <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/60 border border-slate-200/80 p-6 sm:p-8">
-          {/* Instant Evaluator Demo Access Button */}
+          {/* Instant Demo Access Button */}
           <button
             type="button"
             onClick={handleDemoLogin}
@@ -69,7 +69,7 @@ export default function LoginPage() {
             className="w-full mb-6 py-3 px-4 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300/80 rounded-xl text-emerald-900 text-sm font-semibold flex items-center justify-center space-x-2 transition shadow-sm"
           >
             <ShieldCheck className="h-4 w-4 text-emerald-600" />
-            <span>1-Click Evaluator Demo Access</span>
+            <span>1-Click Quick Demo Access</span>
             <ArrowRight className="h-4 w-4 text-emerald-600" />
           </button>
 

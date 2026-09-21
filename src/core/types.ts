@@ -91,7 +91,7 @@ export const CoverageSchema = z.object({
 export type Coverage = z.infer<typeof CoverageSchema>;
 
 /**
- * Exactly conforms to Appendix A of the Trao brief.
+ * Core Interview Kit Schema and Structure.
  */
 export const InterviewKitSchema = z.object({
   source: KitSourceSchema,

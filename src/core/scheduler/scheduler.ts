@@ -3,7 +3,7 @@ import { Question, Requirement, Schedule, ScheduleDay } from "../types.js";
 /**
  * Deterministic Arithmetic Schedule Allocator
  *
- * Implements Section 8 of the Trao brief:
+ * Distributes interview preparation material across available study days:
  * - Pure arithmetic and allocation (not handed to an LLM).
  * - Exact days: number of days in schedule === days_available.
  * - Every must-have requirement appears somewhere in the schedule.

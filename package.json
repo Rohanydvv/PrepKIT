@@ -1,7 +1,7 @@
 {
   "name": "ai-interview-prep-kit",
   "version": "1.0.0",
-  "description": "Personalised AI interview preparation kit generator and practice platform for Trao assessment",
+  "description": "AI-powered interview preparation platform with automated company research, question banks, flashcards, study scheduling, and mock coaching",
   "private": true,
   "type": "module",
   "scripts": {

@@ -23,13 +23,13 @@ export interface PipelineOptions {
 /**
  * The Master Interview Prep Kit Pipeline
  *
- * Implements Section 3, 4, 5, 8, 10, 11 of the Trao brief:
- * - Genuine multi-step deliberate pipeline responding to discovered facts.
+ * Implements end-to-end research, extraction, generation, and scheduling:
+ * - Multi-step deliberate pipeline responding to discovered facts.
  * - Crawls company site, ranks career/about links, respects robots.txt.
- * - Looks for public interview discussion.
+ * - Analyzes public interview discussions.
  * - Deterministic coverage gap checker with second-pass loop.
  * - Deterministic arithmetic day-by-day scheduler.
- * - Appendix A schema enforcement.
+ * - Strict schema enforcement.
  */
 export async function generateInterviewPrepKit(
   options: PipelineOptions

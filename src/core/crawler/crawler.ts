@@ -23,7 +23,7 @@ async function fetchWithRetry(url: string, retries = MAX_RETRIES): Promise<strin
   const config: AxiosRequestConfig = {
     timeout: AXIOS_TIMEOUT,
     headers: {
-      "User-Agent": "TraoInterviewPrepKitBot/1.0 (+https://github.com/trao-assessment)",
+      "User-Agent": "PrepKitBot/1.0 (+https://github.com/Rohanydvv/PrepKIT)",
       Accept: "text/html,application/xhtml+xml,text/plain;q=0.9,*/*;q=0.8",
     },
     maxContentLength: 2 * 1024 * 1024, // 2MB max response

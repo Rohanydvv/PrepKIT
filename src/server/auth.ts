@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { embeddedStore, UserRecord } from "./db.js";
 
-const JWT_SECRET = process.env.JWT_SECRET || "trao-prep-kit-default-jwt-secret";
+const JWT_SECRET = process.env.JWT_SECRET || "prepkit-default-jwt-secret";
 const TOKEN_EXPIRY = "7d";
 
 export interface AuthenticatedUser {

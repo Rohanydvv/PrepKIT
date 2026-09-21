@@ -17,7 +17,7 @@ export async function fetchRobotsPolicy(baseUrl: string): Promise<RobotsPolicy> 
     const response = await axios.get(robotsUrl, {
       timeout: 3000,
       headers: {
-        "User-Agent": "TraoInterviewPrepKitBot/1.0",
+        "User-Agent": "PrepKitBot/1.0",
       },
       validateStatus: (status) => status === 200,
     });
