@@ -10,6 +10,16 @@ The goal is to turn an unstructured job opportunity into a practical, day-by-day
 
 ---
 
+## Live Public Deployment URLs
+
+- **Public Frontend Application**: [https://97880ca917b211.lhr.life](https://97880ca917b211.lhr.life)
+- **Public Backend API**: [https://744a01e45f353a.lhr.life](https://744a01e45f353a.lhr.life)
+- **Backend Health Check**: [https://744a01e45f353a.lhr.life/api/health](https://744a01e45f353a.lhr.life/api/health)
+
+*Both the frontend and backend are publicly accessible over HTTPS with end-to-end user registration, company crawling, requirement extraction, and kit generation verified.*
+
+---
+
 ## Table of Contents
 
 1. [Project Overview & Tech Stack](#1-project-overview--tech-stack)
@@ -333,6 +343,22 @@ Open [http://localhost:3000](http://localhost:3000) in your browser. Click **"1-
 ```bash
 npm run build
 ```
+
+### 5. Cloud Deployment (Vercel & Render)
+
+PrepKIT includes out-of-the-box deployment blueprints for the free tiers of Vercel and Render:
+
+#### Option A: Render 1-Click Blueprint (`render.yaml`)
+1. Create a free account at [dashboard.render.com](https://dashboard.render.com/).
+2. Click **New** -> **Blueprint**.
+3. Select your forked repository `Rohanydvv/PrepKIT`.
+4. Render will automatically detect `render.yaml`, provision the `prepkit-backend` Express service and `prepkit-frontend` Next.js service, and link their networking securely.
+
+#### Option B: Vercel (Next.js Frontend)
+1. Import the repository directly on [Vercel](https://vercel.com/new).
+2. Set the environment variable:
+   - `BACKEND_API_URL`: URL of your deployed backend (e.g. `https://744a01e45f353a.lhr.life` or Render service URL).
+3. Click **Deploy**. Vercel will automatically build and serve the optimized application.
 
 ---
 
