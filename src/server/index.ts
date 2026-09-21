@@ -2,7 +2,7 @@ import express, { Response } from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import crypto from "crypto";
-import { initDatabase, embeddedStore, StoredKitRecord } from "./db.js";
+import { initDatabase, dataStore, StoredKitRecord } from "./db.js";
 import {
   requireAuth,
   registerUser,
@@ -39,7 +39,7 @@ app.get("/api/health", (_req, res) => {
 app.post("/api/auth/register", async (req, res) => {
   try {
     const { email, password } = req.body;
-    const { user, token } = registerUser(email, password);
+    const { user, token } = await registerUser(email, password);
 
     res.cookie("token", token, {
       httpOnly: true,
@@ -57,7 +57,7 @@ app.post("/api/auth/register", async (req, res) => {
 app.post("/api/auth/login", async (req, res) => {
   try {
     const { email, password } = req.body;
-    const { user, token } = loginUser(email, password);
+    const { user, token } = await loginUser(email, password);
 
     res.cookie("token", token, {
       httpOnly: true,
@@ -86,17 +86,17 @@ app.get("/api/auth/me", requireAuth, (req: AuthenticatedRequest, res: Response) 
 // ---------------------------------------------------------------------------
 
 // List kits for current authenticated user
-app.get("/api/kits", requireAuth, (req: AuthenticatedRequest, res: Response) => {
+app.get("/api/kits", requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   const userId = req.user!.id;
-  const userKits = embeddedStore.findKitsByUserId(userId);
+  const userKits = await dataStore.findKitsByUserId(userId);
   res.json({ kits: userKits });
 });
 
 // Get single kit
-app.get("/api/kits/:id", requireAuth, (req: AuthenticatedRequest, res: Response) => {
+app.get("/api/kits/:id", requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   const userId = req.user!.id;
   const kitId = String(req.params.id);
-  const record = embeddedStore.findKitById(kitId);
+  const record = await dataStore.findKitById(kitId);
 
   if (!record || record.userId !== userId) {
     res.status(404).json({ error: "Kit not found" });
@@ -147,7 +147,7 @@ app.post("/api/kits/generate", requireAuth, async (req: AuthenticatedRequest, re
       updatedAt: new Date().toISOString(),
     };
 
-    embeddedStore.saveKit(newRecord);
+    await dataStore.saveKit(newRecord);
 
     res.status(201).json({ record: newRecord });
   } catch (err) {
@@ -203,7 +203,7 @@ app.get("/api/kits/generate-stream", requireAuth, async (req: AuthenticatedReque
       updatedAt: new Date().toISOString(),
     };
 
-    embeddedStore.saveKit(newRecord);
+    await dataStore.saveKit(newRecord);
     sendEvent("completed", { record: newRecord });
     res.end();
   } catch (err) {
@@ -213,10 +213,10 @@ app.get("/api/kits/generate-stream", requireAuth, async (req: AuthenticatedReque
 });
 
 // Update kit (Builder changes: edits, reorder, additions, pinning)
-app.put("/api/kits/:id", requireAuth, (req: AuthenticatedRequest, res: Response) => {
+app.put("/api/kits/:id", requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   const userId = req.user!.id;
   const kitId = String(req.params.id);
-  const existing = embeddedStore.findKitById(kitId);
+  const existing = await dataStore.findKitById(kitId);
 
   if (!existing || existing.userId !== userId) {
     res.status(404).json({ error: "Kit not found" });
@@ -238,22 +238,22 @@ app.put("/api/kits/:id", requireAuth, (req: AuthenticatedRequest, res: Response)
   }
   existing.updatedAt = new Date().toISOString();
 
-  embeddedStore.saveKit(existing);
+  await dataStore.saveKit(existing);
   res.json({ record: existing });
 });
 
 // Delete kit
-app.delete("/api/kits/:id", requireAuth, (req: AuthenticatedRequest, res: Response) => {
+app.delete("/api/kits/:id", requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   const userId = req.user!.id;
   const kitId = String(req.params.id);
-  const existing = embeddedStore.findKitById(kitId);
+  const existing = await dataStore.findKitById(kitId);
 
   if (!existing || existing.userId !== userId) {
     res.status(404).json({ error: "Kit not found" });
     return;
   }
 
-  embeddedStore.deleteKit(kitId);
+  await dataStore.deleteKit(kitId);
   res.json({ message: "Kit deleted successfully" });
 });
 
@@ -263,7 +263,7 @@ app.delete("/api/kits/:id", requireAuth, (req: AuthenticatedRequest, res: Respon
 app.post("/api/kits/:id/regenerate-section", requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   const userId = req.user!.id;
   const kitId = String(req.params.id);
-  const record = embeddedStore.findKitById(kitId);
+  const record = await dataStore.findKitById(kitId);
 
   if (!record || record.userId !== userId) {
     res.status(404).json({ error: "Kit not found" });
@@ -359,7 +359,7 @@ app.post("/api/kits/:id/regenerate-section", requireAuth, async (req: Authentica
     }
 
     record.updatedAt = new Date().toISOString();
-    embeddedStore.saveKit(record);
+    await dataStore.saveKit(record);
 
     res.json({ record });
   } catch (err) {
@@ -371,17 +371,17 @@ app.post("/api/kits/:id/regenerate-section", requireAuth, async (req: Authentica
 // ---------------------------------------------------------------------------
 // Practice Mode Endpoints (Section 7)
 // ---------------------------------------------------------------------------
-app.get("/api/kits/:id/practice", requireAuth, (req: AuthenticatedRequest, res: Response) => {
+app.get("/api/kits/:id/practice", requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   const userId = req.user!.id;
   const kitId = String(req.params.id);
-  const record = embeddedStore.findKitById(kitId);
+  const record = await dataStore.findKitById(kitId);
 
   if (!record || record.userId !== userId) {
     res.status(404).json({ error: "Kit not found" });
     return;
   }
 
-  const session = embeddedStore.findPracticeSession(userId, kitId) || {
+  const session = (await dataStore.findPracticeSession(userId, kitId)) || {
     id: `ps_${crypto.randomUUID()}`,
     userId,
     kitId,
@@ -415,7 +415,7 @@ app.get("/api/kits/:id/practice", requireAuth, (req: AuthenticatedRequest, res: 
   });
 });
 
-app.post("/api/kits/:id/practice/record", requireAuth, (req: AuthenticatedRequest, res: Response) => {
+app.post("/api/kits/:id/practice/record", requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   const userId = req.user!.id;
   const kitId = String(req.params.id);
   const { cardId, confidence } = req.body;
@@ -425,7 +425,7 @@ app.post("/api/kits/:id/practice/record", requireAuth, (req: AuthenticatedReques
     return;
   }
 
-  let session = embeddedStore.findPracticeSession(userId, kitId);
+  let session = await dataStore.findPracticeSession(userId, kitId);
   if (!session) {
     session = {
       id: `ps_${crypto.randomUUID()}`,
@@ -444,7 +444,7 @@ app.post("/api/kits/:id/practice/record", requireAuth, (req: AuthenticatedReques
   };
   session.updatedAt = new Date().toISOString();
 
-  embeddedStore.savePracticeSession(session);
+  await dataStore.savePracticeSession(session);
   res.json({ success: true, session });
 });
 

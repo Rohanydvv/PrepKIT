@@ -15,7 +15,7 @@ export type { UserRecord, StoredKitRecord, CardReviewData, PracticeSessionRecord
  * File-based embedded fallback storage for zero-dependency local runs.
  * If MongoDB is not available, all data is safely persisted to `data/db.json`.
  */
-class EmbeddedStore {
+export class EmbeddedStore {
   private filePath: string;
   private data: {
     users: UserRecord[];
@@ -24,7 +24,7 @@ class EmbeddedStore {
   };
 
   constructor() {
-    const dataDir = path.resolve(process.cwd(), "data");
+    const dataDir = process.env.DATA_DIR || path.resolve(process.cwd(), "data");
     if (!fs.existsSync(dataDir)) {
       fs.mkdirSync(dataDir, { recursive: true });
     }
@@ -45,6 +45,10 @@ class EmbeddedStore {
 
   private save() {
     fs.writeFileSync(this.filePath, JSON.stringify(this.data, null, 2), "utf-8");
+  }
+
+  getData() {
+    return this.data;
   }
 
   // User methods
@@ -115,28 +119,238 @@ class EmbeddedStore {
 
 export const embeddedStore = new EmbeddedStore();
 
+// ---------------------------------------------------------------------------
+// Mongoose Schemas & Models for MongoDB Atlas
+// ---------------------------------------------------------------------------
+const userSchema = new mongoose.Schema<UserRecord>(
+  {
+    id: { type: String, required: true, unique: true },
+    email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+    passwordHash: { type: String, required: true },
+    createdAt: { type: String, required: true },
+  },
+  { collection: "users" }
+);
+
+const kitSchema = new mongoose.Schema<StoredKitRecord>(
+  {
+    id: { type: String, required: true, unique: true },
+    userId: { type: String, required: true, index: true },
+    kit: { type: mongoose.Schema.Types.Mixed, required: true },
+    meta: { type: mongoose.Schema.Types.Mixed, default: {} },
+    createdAt: { type: String, required: true },
+    updatedAt: { type: String, required: true },
+  },
+  { collection: "kits" }
+);
+
+const practiceSessionSchema = new mongoose.Schema<PracticeSessionRecord>(
+  {
+    id: { type: String, required: true, unique: true },
+    userId: { type: String, required: true, index: true },
+    kitId: { type: String, required: true, index: true },
+    cards: { type: mongoose.Schema.Types.Mixed, default: {} },
+    updatedAt: { type: String, required: true },
+  },
+  { collection: "practice_sessions" }
+);
+
+export const UserModel =
+  (mongoose.models.User as mongoose.Model<UserRecord>) ||
+  mongoose.model<UserRecord>("User", userSchema);
+
+export const KitModel =
+  (mongoose.models.Kit as mongoose.Model<StoredKitRecord>) ||
+  mongoose.model<StoredKitRecord>("Kit", kitSchema);
+
+export const PracticeSessionModel =
+  (mongoose.models.PracticeSession as mongoose.Model<PracticeSessionRecord>) ||
+  mongoose.model<PracticeSessionRecord>("PracticeSession", practiceSessionSchema);
+
+// ---------------------------------------------------------------------------
+// Connection Lifecycle & Reuse
+// ---------------------------------------------------------------------------
+let mongooseConnectionPromise: Promise<typeof mongoose> | null = null;
 let isMongoConnected = false;
 
 export async function initDatabase(): Promise<void> {
   const mongoUri = process.env.MONGODB_URI;
 
-  if (!mongoUri) {
+  if (!mongoUri || !mongoUri.trim()) {
     console.log("[Database] No MONGODB_URI provided. Using zero-config embedded datastore (data/db.json).");
+    isMongoConnected = false;
     return;
   }
 
-  try {
-    await mongoose.connect(mongoUri, { serverSelectionTimeoutMS: 3000 });
+  // Reuse existing connection if alive
+  if (mongoose.connection.readyState === 1) {
     isMongoConnected = true;
-    console.log("[Database] Connected to MongoDB successfully.");
+    return;
+  }
+
+  if (!mongooseConnectionPromise) {
+    console.log("[Database] Connecting to MongoDB Atlas...");
+    mongooseConnectionPromise = mongoose.connect(mongoUri, {
+      serverSelectionTimeoutMS: 5000,
+    });
+  }
+
+  try {
+    await mongooseConnectionPromise;
+    isMongoConnected = true;
+    console.log("[Database] Connected to MongoDB Atlas successfully.");
+
+    // Seed initial demo data from db.json if database is currently empty
+    await seedFromLocalIfEmpty();
   } catch (err) {
     console.warn(
-      `[Database] MongoDB connection failed (${(err as Error).message}). Falling back smoothly to embedded datastore.`
+      `[Database] MongoDB Atlas connection failed (${(err as Error).message}). Falling back smoothly to embedded datastore.`
     );
     isMongoConnected = false;
+    mongooseConnectionPromise = null;
   }
 }
 
 export function isUsingMongoDB(): boolean {
-  return isMongoConnected;
+  return isMongoConnected && mongoose.connection.readyState === 1;
 }
+
+async function seedFromLocalIfEmpty(): Promise<void> {
+  try {
+    const userCount = await UserModel.countDocuments();
+    if (userCount === 0) {
+      const local = embeddedStore.getData();
+      if (local.users && local.users.length > 0) {
+        console.log(`[Database] Seeding ${local.users.length} initial user(s) to MongoDB Atlas...`);
+        await UserModel.insertMany(local.users);
+      }
+      if (local.kits && local.kits.length > 0) {
+        console.log(`[Database] Seeding ${local.kits.length} initial kit(s) to MongoDB Atlas...`);
+        await KitModel.insertMany(local.kits);
+      }
+      if (local.practiceSessions && local.practiceSessions.length > 0) {
+        await PracticeSessionModel.insertMany(local.practiceSessions);
+      }
+    }
+  } catch (err) {
+    console.warn(`[Database] Initial seed check skipped: ${(err as Error).message}`);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Unified Async DataStore
+// Routes to MongoDB Atlas in Production; falls back to EmbeddedStore locally.
+// ---------------------------------------------------------------------------
+export const dataStore = {
+  async findUserByEmail(email: string): Promise<UserRecord | undefined> {
+    if (isUsingMongoDB()) {
+      const doc = await UserModel.findOne({ email: email.toLowerCase().trim() }).lean();
+      if (!doc) return undefined;
+      return {
+        id: doc.id,
+        email: doc.email,
+        passwordHash: doc.passwordHash,
+        createdAt: doc.createdAt,
+      };
+    }
+    return embeddedStore.findUserByEmail(email);
+  },
+
+  async findUserById(id: string): Promise<UserRecord | undefined> {
+    if (isUsingMongoDB()) {
+      const doc = await UserModel.findOne({ id }).lean();
+      if (!doc) return undefined;
+      return {
+        id: doc.id,
+        email: doc.email,
+        passwordHash: doc.passwordHash,
+        createdAt: doc.createdAt,
+      };
+    }
+    return embeddedStore.findUserById(id);
+  },
+
+  async createUser(user: UserRecord): Promise<UserRecord> {
+    if (isUsingMongoDB()) {
+      await UserModel.create(user);
+      return user;
+    }
+    return embeddedStore.createUser(user);
+  },
+
+  async findKitsByUserId(userId: string): Promise<StoredKitRecord[]> {
+    if (isUsingMongoDB()) {
+      const docs = await KitModel.find({ userId }).sort({ updatedAt: -1 }).lean();
+      return docs.map((d) => ({
+        id: d.id,
+        userId: d.userId,
+        kit: d.kit,
+        meta: d.meta || {},
+        createdAt: d.createdAt,
+        updatedAt: d.updatedAt,
+      }));
+    }
+    return embeddedStore.findKitsByUserId(userId);
+  },
+
+  async findKitById(id: string): Promise<StoredKitRecord | undefined> {
+    if (isUsingMongoDB()) {
+      const doc = await KitModel.findOne({ id }).lean();
+      if (!doc) return undefined;
+      return {
+        id: doc.id,
+        userId: doc.userId,
+        kit: doc.kit,
+        meta: doc.meta || {},
+        createdAt: doc.createdAt,
+        updatedAt: doc.updatedAt,
+      };
+    }
+    return embeddedStore.findKitById(id);
+  },
+
+  async saveKit(record: StoredKitRecord): Promise<StoredKitRecord> {
+    if (isUsingMongoDB()) {
+      await KitModel.findOneAndUpdate({ id: record.id }, record, {
+        upsert: true,
+        new: true,
+      });
+      return record;
+    }
+    return embeddedStore.saveKit(record);
+  },
+
+  async deleteKit(id: string): Promise<boolean> {
+    if (isUsingMongoDB()) {
+      const res = await KitModel.deleteOne({ id });
+      return res.deletedCount > 0;
+    }
+    return embeddedStore.deleteKit(id);
+  },
+
+  async findPracticeSession(userId: string, kitId: string): Promise<PracticeSessionRecord | undefined> {
+    if (isUsingMongoDB()) {
+      const doc = await PracticeSessionModel.findOne({ userId, kitId }).lean();
+      if (!doc) return undefined;
+      return {
+        id: doc.id,
+        userId: doc.userId,
+        kitId: doc.kitId,
+        cards: doc.cards || {},
+        updatedAt: doc.updatedAt,
+      };
+    }
+    return embeddedStore.findPracticeSession(userId, kitId);
+  },
+
+  async savePracticeSession(record: PracticeSessionRecord): Promise<PracticeSessionRecord> {
+    if (isUsingMongoDB()) {
+      await PracticeSessionModel.findOneAndUpdate({ id: record.id }, record, {
+        upsert: true,
+        new: true,
+      });
+      return record;
+    }
+    return embeddedStore.savePracticeSession(record);
+  },
+};

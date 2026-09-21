@@ -11,7 +11,7 @@
     "build:server": "tsc -p tsconfig.server.json",
     "build:client": "next build",
     "build": "next build",
-    "start:server": "node dist/server/index.js",
+    "start:server": "tsx src/server/index.ts",
     "start": "next start",
     "evaluate": "tsx src/cli/evaluate.ts",
     "test": "vitest run"
@@ -33,6 +33,7 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "tailwind-merge": "^3.0.1",
+    "tsx": "^4.19.3",
     "zod": "^3.24.2"
   },
   "devDependencies": {
@@ -47,7 +48,6 @@
     "autoprefixer": "^10.4.20",
     "postcss": "^8.5.2",
     "tailwindcss": "^3.4.17",
-    "tsx": "^4.19.3",
     "typescript": "^5.7.3",
     "vitest": "^3.0.5"
   }

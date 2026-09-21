@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "generated_at": "2026-09-21T19:21:46.958Z",
+  "generated_at": "2026-09-21T20:34:54.479Z",
   "kits": [
     {
       "id": "case-01",
@@ -12,7 +12,7 @@
           "role": "Senior Backend Engineer",
           "location": "Unspecified",
           "jd_chars": 463,
-          "researched_at": "2026-09-21T19:21:41.750Z",
+          "researched_at": "2026-09-21T20:34:48.284Z",
           "pages_used": [
             "https://posthog.com/",
             "https://posthog.com/careers",
@@ -210,7 +210,7 @@
           "role": "Full-Stack Software Engineer",
           "location": "Unspecified",
           "jd_chars": 342,
-          "researched_at": "2026-09-21T19:21:43.318Z",
+          "researched_at": "2026-09-21T20:34:49.950Z",
           "pages_used": [
             "https://github.com/",
             "https://github.com/customer-stories/figma"
@@ -385,7 +385,7 @@
           "role": "Junior Web Developer",
           "location": "Unspecified",
           "jd_chars": 122,
-          "researched_at": "2026-09-21T19:21:44.187Z",
+          "researched_at": "2026-09-21T20:34:51.403Z",
           "pages_used": [
             "https://python.org/",
             "https://python.org/jobs/",
@@ -516,7 +516,7 @@
           "role": "Staff Systems Architect",
           "location": "Unspecified",
           "jd_chars": 276,
-          "researched_at": "2026-09-21T19:21:46.956Z",
+          "researched_at": "2026-09-21T20:34:54.478Z",
           "pages_used": [
             "https://stripe.com/",
             "https://stripe.com/in/careers",

@@ -1,11 +1,11 @@
 services:
-  # Backend Express API Service
+  # Backend Express API Service (Persistent Cloud Node.js Daemon)
   - type: web
     name: prepkit-backend
     env: node
     plan: free
     buildCommand: npm install
-    startCommand: npm run dev:server
+    startCommand: npm run start:server
     envVars:
       - key: PORT
         value: 5000
@@ -15,6 +15,8 @@ services:
         value: "true"
       - key: JWT_SECRET
         generateValue: true
+      - key: MONGODB_URI
+        sync: false
       - key: LLM_PROVIDER
         value: gemini
       - key: GEMINI_API_KEY
@@ -22,7 +24,7 @@ services:
       - key: GEMINI_MODEL
         value: gemini-2.0-flash
 
-  # Frontend Next.js Service
+  # Frontend Next.js Service (For Render or as fallback to Vercel)
   - type: web
     name: prepkit-frontend
     env: node

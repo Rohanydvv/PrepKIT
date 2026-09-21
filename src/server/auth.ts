@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
-import { embeddedStore, UserRecord } from "./db.js";
+import { dataStore, UserRecord } from "./db.js";
 
 const JWT_SECRET = process.env.JWT_SECRET || "prepkit-default-jwt-secret";
 const TOKEN_EXPIRY = "7d";
@@ -30,7 +30,10 @@ export function generateToken(user: AuthenticatedUser): string {
   });
 }
 
-export function registerUser(email: string, passwordPlain: string): { user: AuthenticatedUser; token: string } {
+export async function registerUser(
+  email: string,
+  passwordPlain: string
+): Promise<{ user: AuthenticatedUser; token: string }> {
   const cleanEmail = email.trim().toLowerCase();
   if (!cleanEmail || !passwordPlain) {
     throw new Error("Email and password are required.");
@@ -39,7 +42,7 @@ export function registerUser(email: string, passwordPlain: string): { user: Auth
     throw new Error("Password must be at least 6 characters.");
   }
 
-  const existing = embeddedStore.findUserByEmail(cleanEmail);
+  const existing = await dataStore.findUserByEmail(cleanEmail);
   if (existing) {
     throw new Error("An account with this email already exists.");
   }
@@ -54,7 +57,7 @@ export function registerUser(email: string, passwordPlain: string): { user: Auth
     createdAt: new Date().toISOString(),
   };
 
-  embeddedStore.createUser(newUser);
+  await dataStore.createUser(newUser);
 
   const authUser: AuthenticatedUser = { id: newUser.id, email: newUser.email };
   const token = generateToken(authUser);
@@ -62,9 +65,12 @@ export function registerUser(email: string, passwordPlain: string): { user: Auth
   return { user: authUser, token };
 }
 
-export function loginUser(email: string, passwordPlain: string): { user: AuthenticatedUser; token: string } {
+export async function loginUser(
+  email: string,
+  passwordPlain: string
+): Promise<{ user: AuthenticatedUser; token: string }> {
   const cleanEmail = email.trim().toLowerCase();
-  const user = embeddedStore.findUserByEmail(cleanEmail);
+  const user = await dataStore.findUserByEmail(cleanEmail);
   if (!user) {
     throw new Error("Invalid email or password.");
   }
