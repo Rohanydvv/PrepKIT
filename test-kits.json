@@ -1,0 +1,1134 @@
+{
+  "version": "1.0",
+  "generated_at": "2026-09-21T19:13:23.789Z",
+  "kits": [
+    {
+      "id": "case-01",
+      "status": "ok",
+      "kit": {
+        "source": {
+          "company": "PostHog – We make your product self",
+          "company_url": "https://posthog.com/",
+          "role": "<untrusted_content_job_description>",
+          "location": "Unspecified",
+          "jd_chars": 463,
+          "researched_at": "2026-09-21T19:13:17.323Z",
+          "pages_used": [
+            "https://posthog.com/",
+            "https://posthog.com/careers",
+            "https://posthog.com/self-driving"
+          ]
+        },
+        "company_brief": {
+          "summary": "Modern technology company focused on digital platforms and engineering excellence.",
+          "what_they_do": "Develops software solutions, scalable backends, and user-facing digital applications.",
+          "sources": [
+            "https://posthog.com/",
+            "https://posthog.com/careers",
+            "https://posthog.com/self-driving"
+          ]
+        },
+        "role": {
+          "title": "<untrusted_content_job_description>",
+          "seniority": "Senior",
+          "responsibilities": [
+            "Build and architect core systems for the role",
+            "Collaborate with product and cross-functional engineering teams"
+          ],
+          "requirements": [
+            {
+              "id": "r1",
+              "text": "We are looking for an experienced engineer with 5+ years of Node.js and distributed systems.",
+              "kind": "technical",
+              "priority": "must"
+            },
+            {
+              "id": "r2",
+              "text": "Deep expertise in Node.js, TypeScript, and microservices architecture",
+              "kind": "technical",
+              "priority": "must"
+            },
+            {
+              "id": "r3",
+              "text": "Experience designing fault-tolerant high-throughput REST and gRPC APIs",
+              "kind": "technical",
+              "priority": "must"
+            },
+            {
+              "id": "r4",
+              "text": "Proven leadership in mentoring junior engineers and conducting code reviews",
+              "kind": "behavioural",
+              "priority": "must"
+            },
+            {
+              "id": "r5",
+              "text": "Hands-on experience with Kafka and Redis caching",
+              "kind": "technical",
+              "priority": "must"
+            },
+            {
+              "id": "r6",
+              "text": "Knowledge of Kubernetes and CI/CD pipelines",
+              "kind": "technical",
+              "priority": "must"
+            }
+          ]
+        },
+        "questions": [
+          {
+            "id": "q1",
+            "requirement_ids": [
+              "r1"
+            ],
+            "category": "technical",
+            "prompt": "Explain how you manage state and handle performance bottlenecks in high-throughput applications.",
+            "answer_outline": "Discuss architectural separation, profiling tools, caching strategies, and memory management.",
+            "difficulty": 3
+          },
+          {
+            "id": "q2",
+            "requirement_ids": [
+              "r1"
+            ],
+            "category": "system-design",
+            "prompt": "How would you architect a distributed service handling sudden 10x traffic spikes?",
+            "answer_outline": "Propose rate-limiting, message queues for asynchronous ingestion, horizontal autoscaling, and database read replicas.",
+            "difficulty": 3
+          },
+          {
+            "id": "q3",
+            "requirement_ids": [
+              "r2"
+            ],
+            "category": "behavioural",
+            "prompt": "Describe a situation where you had a disagreement with a team member about technical architecture. How did you resolve it?",
+            "answer_outline": "Situation: conflicting design choices. Task: align on technical direction. Action: evaluated trade-offs with benchmark data. Result: consensus and on-time delivery.",
+            "difficulty": 2
+          },
+          {
+            "id": "q4",
+            "requirement_ids": [
+              "r1"
+            ],
+            "category": "company-fit",
+            "prompt": "Why are you interested in working on our core tech stack and product mission?",
+            "answer_outline": "Connect personal engineering strengths to the company's product trajectory and customer impact.",
+            "difficulty": 1
+          },
+          {
+            "id": "q5",
+            "requirement_ids": [
+              "r3"
+            ],
+            "category": "technical",
+            "prompt": "Walk me through how you ensure test coverage and reliability for this requirement in production.",
+            "answer_outline": "Unit tests, integration testing with testcontainers, automated CI checks, and canary deployments.",
+            "difficulty": 2
+          }
+        ],
+        "flashcards": [
+          {
+            "id": "f1",
+            "front": "What are the primary trade-offs of microservices vs monolithic architectures?",
+            "back": "Microservices offer independent scalability and deployment isolation at the cost of operational complexity, distributed tracing overhead, and network latency.",
+            "requirement_ids": [
+              "r1"
+            ]
+          },
+          {
+            "id": "f2",
+            "front": "Explain the STAR technique for behavioural questions.",
+            "back": "Situation (context), Task (objective), Action (specific steps YOU took), Result (measurable outcome and lessons learned).",
+            "requirement_ids": [
+              "r2"
+            ]
+          }
+        ],
+        "schedule": {
+          "days_available": 5,
+          "days": [
+            {
+              "day": 1,
+              "focus": "Core Architecture & High-Priority Technical Foundations",
+              "question_ids": [
+                "q2"
+              ],
+              "minutes": 55
+            },
+            {
+              "day": 2,
+              "focus": "Technical Deep-Dives, Problem Solving & Algorithms",
+              "question_ids": [
+                "q1"
+              ],
+              "minutes": 55
+            },
+            {
+              "day": 3,
+              "focus": "Technical Deep-Dives, Problem Solving & Algorithms",
+              "question_ids": [
+                "q5"
+              ],
+              "minutes": 40
+            },
+            {
+              "day": 4,
+              "focus": "Behavioural Mastery, STAR Stories & Leadership Scenarios",
+              "question_ids": [
+                "q3"
+              ],
+              "minutes": 40
+            },
+            {
+              "day": 5,
+              "focus": "Final Polish, Company Alignment & Mindset Preparation",
+              "question_ids": [
+                "q4"
+              ],
+              "minutes": 30
+            }
+          ]
+        },
+        "coverage": {
+          "uncovered_requirement_ids": [
+            "r4",
+            "r5",
+            "r6"
+          ],
+          "passes": 2
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "case-02",
+      "status": "ok",
+      "kit": {
+        "source": {
+          "company": "GitHub · Change is constant. GitHub keeps you ahead. · GitHub",
+          "company_url": "https://github.com/",
+          "role": "<untrusted_content_job_description>",
+          "location": "Unspecified",
+          "jd_chars": 342,
+          "researched_at": "2026-09-21T19:13:18.774Z",
+          "pages_used": [
+            "https://github.com/",
+            "https://github.com/customer-stories/figma"
+          ]
+        },
+        "company_brief": {
+          "summary": "Modern technology company focused on digital platforms and engineering excellence.",
+          "what_they_do": "Develops software solutions, scalable backends, and user-facing digital applications.",
+          "sources": [
+            "https://github.com/",
+            "https://github.com/customer-stories/figma"
+          ]
+        },
+        "role": {
+          "title": "<untrusted_content_job_description>",
+          "seniority": "Mid-Level",
+          "responsibilities": [
+            "Build and architect core systems for the role",
+            "Collaborate with product and cross-functional engineering teams"
+          ],
+          "requirements": [
+            {
+              "id": "r1",
+              "text": "3+ years with React and modern frontend state management",
+              "kind": "technical",
+              "priority": "must"
+            },
+            {
+              "id": "r2",
+              "text": "Solid understanding of relational database schema design (PostgreSQL)",
+              "kind": "technical",
+              "priority": "must"
+            },
+            {
+              "id": "r3",
+              "text": "Familiarity with Next.js App Router",
+              "kind": "technical",
+              "priority": "must"
+            },
+            {
+              "id": "r4",
+              "text": "Experience in fintech or financial ledger systems",
+              "kind": "domain",
+              "priority": "must"
+            },
+            {
+              "id": "r5",
+              "text": "Please extract the role breakdown and requirements according to the instructions.",
+              "kind": "technical",
+              "priority": "must"
+            }
+          ]
+        },
+        "questions": [
+          {
+            "id": "q1",
+            "requirement_ids": [
+              "r1"
+            ],
+            "category": "technical",
+            "prompt": "Explain how you manage state and handle performance bottlenecks in high-throughput applications.",
+            "answer_outline": "Discuss architectural separation, profiling tools, caching strategies, and memory management.",
+            "difficulty": 3
+          },
+          {
+            "id": "q2",
+            "requirement_ids": [
+              "r1"
+            ],
+            "category": "system-design",
+            "prompt": "How would you architect a distributed service handling sudden 10x traffic spikes?",
+            "answer_outline": "Propose rate-limiting, message queues for asynchronous ingestion, horizontal autoscaling, and database read replicas.",
+            "difficulty": 3
+          },
+          {
+            "id": "q3",
+            "requirement_ids": [
+              "r2"
+            ],
+            "category": "behavioural",
+            "prompt": "Describe a situation where you had a disagreement with a team member about technical architecture. How did you resolve it?",
+            "answer_outline": "Situation: conflicting design choices. Task: align on technical direction. Action: evaluated trade-offs with benchmark data. Result: consensus and on-time delivery.",
+            "difficulty": 2
+          },
+          {
+            "id": "q4",
+            "requirement_ids": [
+              "r1"
+            ],
+            "category": "company-fit",
+            "prompt": "Why are you interested in working on our core tech stack and product mission?",
+            "answer_outline": "Connect personal engineering strengths to the company's product trajectory and customer impact.",
+            "difficulty": 1
+          },
+          {
+            "id": "q5",
+            "requirement_ids": [
+              "r3"
+            ],
+            "category": "technical",
+            "prompt": "Walk me through how you ensure test coverage and reliability for this requirement in production.",
+            "answer_outline": "Unit tests, integration testing with testcontainers, automated CI checks, and canary deployments.",
+            "difficulty": 2
+          }
+        ],
+        "flashcards": [
+          {
+            "id": "f1",
+            "front": "What are the primary trade-offs of microservices vs monolithic architectures?",
+            "back": "Microservices offer independent scalability and deployment isolation at the cost of operational complexity, distributed tracing overhead, and network latency.",
+            "requirement_ids": [
+              "r1"
+            ]
+          },
+          {
+            "id": "f2",
+            "front": "Explain the STAR technique for behavioural questions.",
+            "back": "Situation (context), Task (objective), Action (specific steps YOU took), Result (measurable outcome and lessons learned).",
+            "requirement_ids": [
+              "r2"
+            ]
+          }
+        ],
+        "schedule": {
+          "days_available": 3,
+          "days": [
+            {
+              "day": 1,
+              "focus": "Core Architecture & High-Priority Technical Foundations",
+              "question_ids": [
+                "q2",
+                "q1"
+              ],
+              "minutes": 95
+            },
+            {
+              "day": 2,
+              "focus": "Technical Deep-Dives, Problem Solving & Algorithms",
+              "question_ids": [
+                "q5",
+                "q3"
+              ],
+              "minutes": 65
+            },
+            {
+              "day": 3,
+              "focus": "Final Polish, Company Alignment & Mindset Preparation",
+              "question_ids": [
+                "q4"
+              ],
+              "minutes": 30
+            }
+          ]
+        },
+        "coverage": {
+          "uncovered_requirement_ids": [
+            "r4",
+            "r5"
+          ],
+          "passes": 2
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "case-03-stub",
+      "status": "ok",
+      "kit": {
+        "source": {
+          "company": "Welcome to Python.org",
+          "company_url": "https://python.org/",
+          "role": "<untrusted_content_job_description>",
+          "location": "Unspecified",
+          "jd_chars": 122,
+          "researched_at": "2026-09-21T19:13:20.687Z",
+          "pages_used": [
+            "https://python.org/",
+            "https://python.org/jobs/",
+            "https://python.org/about/"
+          ]
+        },
+        "company_brief": {
+          "summary": "Modern technology company focused on digital platforms and engineering excellence.",
+          "what_they_do": "Develops software solutions, scalable backends, and user-facing digital applications.",
+          "sources": [
+            "https://python.org/",
+            "https://python.org/jobs/",
+            "https://python.org/about/"
+          ]
+        },
+        "role": {
+          "title": "<untrusted_content_job_description>",
+          "seniority": "Junior",
+          "responsibilities": [
+            "Build and architect core systems for the role",
+            "Collaborate with product and cross-functional engineering teams"
+          ],
+          "requirements": [
+            {
+              "id": "r1",
+              "text": "Looking for an eager developer to fix bugs and build landing pages. Must know HTML, CSS, JavaScript.",
+              "kind": "technical",
+              "priority": "must"
+            },
+            {
+              "id": "r2",
+              "text": "Please extract the role breakdown and requirements according to the instructions.",
+              "kind": "technical",
+              "priority": "must"
+            }
+          ]
+        },
+        "questions": [
+          {
+            "id": "q1",
+            "requirement_ids": [
+              "r1"
+            ],
+            "category": "technical",
+            "prompt": "Explain how you manage state and handle performance bottlenecks in high-throughput applications.",
+            "answer_outline": "Discuss architectural separation, profiling tools, caching strategies, and memory management.",
+            "difficulty": 3
+          },
+          {
+            "id": "q2",
+            "requirement_ids": [
+              "r1"
+            ],
+            "category": "system-design",
+            "prompt": "How would you architect a distributed service handling sudden 10x traffic spikes?",
+            "answer_outline": "Propose rate-limiting, message queues for asynchronous ingestion, horizontal autoscaling, and database read replicas.",
+            "difficulty": 3
+          },
+          {
+            "id": "q3",
+            "requirement_ids": [
+              "r2"
+            ],
+            "category": "behavioural",
+            "prompt": "Describe a situation where you had a disagreement with a team member about technical architecture. How did you resolve it?",
+            "answer_outline": "Situation: conflicting design choices. Task: align on technical direction. Action: evaluated trade-offs with benchmark data. Result: consensus and on-time delivery.",
+            "difficulty": 2
+          },
+          {
+            "id": "q4",
+            "requirement_ids": [
+              "r1"
+            ],
+            "category": "company-fit",
+            "prompt": "Why are you interested in working on our core tech stack and product mission?",
+            "answer_outline": "Connect personal engineering strengths to the company's product trajectory and customer impact.",
+            "difficulty": 1
+          }
+        ],
+        "flashcards": [
+          {
+            "id": "f1",
+            "front": "What are the primary trade-offs of microservices vs monolithic architectures?",
+            "back": "Microservices offer independent scalability and deployment isolation at the cost of operational complexity, distributed tracing overhead, and network latency.",
+            "requirement_ids": [
+              "r1"
+            ]
+          },
+          {
+            "id": "f2",
+            "front": "Explain the STAR technique for behavioural questions.",
+            "back": "Situation (context), Task (objective), Action (specific steps YOU took), Result (measurable outcome and lessons learned).",
+            "requirement_ids": [
+              "r2"
+            ]
+          }
+        ],
+        "schedule": {
+          "days_available": 1,
+          "days": [
+            {
+              "day": 1,
+              "focus": "High-Yield Intensive Preparation: Core Must-Haves & Architecture",
+              "question_ids": [
+                "q2",
+                "q1",
+                "q3",
+                "q4"
+              ],
+              "minutes": 135
+            }
+          ]
+        },
+        "coverage": {
+          "uncovered_requirement_ids": [],
+          "passes": 1
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "case-04-60days",
+      "status": "ok",
+      "kit": {
+        "source": {
+          "company": "Stripe",
+          "company_url": "https://stripe.com/",
+          "role": "<untrusted_content_job_description>",
+          "location": "Unspecified",
+          "jd_chars": 276,
+          "researched_at": "2026-09-21T19:13:23.788Z",
+          "pages_used": [
+            "https://stripe.com/",
+            "https://stripe.com/in/careers",
+            "https://stripe.com/in/products"
+          ]
+        },
+        "company_brief": {
+          "summary": "Modern technology company focused on digital platforms and engineering excellence.",
+          "what_they_do": "Develops software solutions, scalable backends, and user-facing digital applications.",
+          "sources": [
+            "https://stripe.com/",
+            "https://stripe.com/in/careers",
+            "https://stripe.com/in/products"
+          ]
+        },
+        "role": {
+          "title": "<untrusted_content_job_description>",
+          "seniority": "Senior",
+          "responsibilities": [
+            "Build and architect core systems for the role",
+            "Collaborate with product and cross-functional engineering teams"
+          ],
+          "requirements": [
+            {
+              "id": "r1",
+              "text": "10+ years designing enterprise distributed transactions",
+              "kind": "technical",
+              "priority": "must"
+            },
+            {
+              "id": "r2",
+              "text": "Expertise in zero-downtime database migrations",
+              "kind": "technical",
+              "priority": "must"
+            },
+            {
+              "id": "r3",
+              "text": "Cross-team technical leadership and RFC authoring",
+              "kind": "behavioural",
+              "priority": "must"
+            },
+            {
+              "id": "r4",
+              "text": "Please extract the role breakdown and requirements according to the instructions.",
+              "kind": "technical",
+              "priority": "must"
+            }
+          ]
+        },
+        "questions": [
+          {
+            "id": "q1",
+            "requirement_ids": [
+              "r1"
+            ],
+            "category": "technical",
+            "prompt": "Explain how you manage state and handle performance bottlenecks in high-throughput applications.",
+            "answer_outline": "Discuss architectural separation, profiling tools, caching strategies, and memory management.",
+            "difficulty": 3
+          },
+          {
+            "id": "q2",
+            "requirement_ids": [
+              "r1"
+            ],
+            "category": "system-design",
+            "prompt": "How would you architect a distributed service handling sudden 10x traffic spikes?",
+            "answer_outline": "Propose rate-limiting, message queues for asynchronous ingestion, horizontal autoscaling, and database read replicas.",
+            "difficulty": 3
+          },
+          {
+            "id": "q3",
+            "requirement_ids": [
+              "r2"
+            ],
+            "category": "behavioural",
+            "prompt": "Describe a situation where you had a disagreement with a team member about technical architecture. How did you resolve it?",
+            "answer_outline": "Situation: conflicting design choices. Task: align on technical direction. Action: evaluated trade-offs with benchmark data. Result: consensus and on-time delivery.",
+            "difficulty": 2
+          },
+          {
+            "id": "q4",
+            "requirement_ids": [
+              "r1"
+            ],
+            "category": "company-fit",
+            "prompt": "Why are you interested in working on our core tech stack and product mission?",
+            "answer_outline": "Connect personal engineering strengths to the company's product trajectory and customer impact.",
+            "difficulty": 1
+          },
+          {
+            "id": "q5",
+            "requirement_ids": [
+              "r3"
+            ],
+            "category": "technical",
+            "prompt": "Walk me through how you ensure test coverage and reliability for this requirement in production.",
+            "answer_outline": "Unit tests, integration testing with testcontainers, automated CI checks, and canary deployments.",
+            "difficulty": 2
+          }
+        ],
+        "flashcards": [
+          {
+            "id": "f1",
+            "front": "What are the primary trade-offs of microservices vs monolithic architectures?",
+            "back": "Microservices offer independent scalability and deployment isolation at the cost of operational complexity, distributed tracing overhead, and network latency.",
+            "requirement_ids": [
+              "r1"
+            ]
+          },
+          {
+            "id": "f2",
+            "front": "Explain the STAR technique for behavioural questions.",
+            "back": "Situation (context), Task (objective), Action (specific steps YOU took), Result (measurable outcome and lessons learned).",
+            "requirement_ids": [
+              "r2"
+            ]
+          }
+        ],
+        "schedule": {
+          "days_available": 60,
+          "days": [
+            {
+              "day": 1,
+              "focus": "Core Architecture & High-Priority Technical Foundations",
+              "question_ids": [
+                "q2"
+              ],
+              "minutes": 55
+            },
+            {
+              "day": 2,
+              "focus": "Technical Deep-Dives, Problem Solving & Algorithms",
+              "question_ids": [
+                "q1"
+              ],
+              "minutes": 55
+            },
+            {
+              "day": 3,
+              "focus": "Technical Deep-Dives, Problem Solving & Algorithms",
+              "question_ids": [
+                "q5"
+              ],
+              "minutes": 40
+            },
+            {
+              "day": 4,
+              "focus": "Behavioural Mastery, STAR Stories & Leadership Scenarios",
+              "question_ids": [
+                "q3"
+              ],
+              "minutes": 40
+            },
+            {
+              "day": 5,
+              "focus": "Company Mission, Values & Culture Alignment",
+              "question_ids": [
+                "q4"
+              ],
+              "minutes": 30
+            },
+            {
+              "day": 6,
+              "focus": "System Architecture, Scalability & Trade-offs",
+              "question_ids": [
+                "q2"
+              ],
+              "minutes": 55
+            },
+            {
+              "day": 7,
+              "focus": "Technical Deep-Dives, Problem Solving & Algorithms",
+              "question_ids": [
+                "q1"
+              ],
+              "minutes": 55
+            },
+            {
+              "day": 8,
+              "focus": "Technical Deep-Dives, Problem Solving & Algorithms",
+              "question_ids": [
+                "q5"
+              ],
+              "minutes": 40
+            },
+            {
+              "day": 9,
+              "focus": "Behavioural Mastery, STAR Stories & Leadership Scenarios",
+              "question_ids": [
+                "q3"
+              ],
+              "minutes": 40
+            },
+            {
+              "day": 10,
+              "focus": "Company Mission, Values & Culture Alignment",
+              "question_ids": [
+                "q4"
+              ],
+              "minutes": 30
+            },
+            {
+              "day": 11,
+              "focus": "System Architecture, Scalability & Trade-offs",
+              "question_ids": [
+                "q2"
+              ],
+              "minutes": 55
+            },
+            {
+              "day": 12,
+              "focus": "Technical Deep-Dives, Problem Solving & Algorithms",
+              "question_ids": [
+                "q1"
+              ],
+              "minutes": 55
+            },
+            {
+              "day": 13,
+              "focus": "Technical Deep-Dives, Problem Solving & Algorithms",
+              "question_ids": [
+                "q5"
+              ],
+              "minutes": 40
+            },
+            {
+              "day": 14,
+              "focus": "Behavioural Mastery, STAR Stories & Leadership Scenarios",
+              "question_ids": [
+                "q3"
+              ],
+              "minutes": 40
+            },
+            {
+              "day": 15,
+              "focus": "Company Mission, Values & Culture Alignment",
+              "question_ids": [
+                "q4"
+              ],
+              "minutes": 30
+            },
+            {
+              "day": 16,
+              "focus": "System Architecture, Scalability & Trade-offs",
+              "question_ids": [
+                "q2"
+              ],
+              "minutes": 55
+            },
+            {
+              "day": 17,
+              "focus": "Technical Deep-Dives, Problem Solving & Algorithms",
+              "question_ids": [
+                "q1"
+              ],
+              "minutes": 55
+            },
+            {
+              "day": 18,
+              "focus": "Technical Deep-Dives, Problem Solving & Algorithms",
+              "question_ids": [
+                "q5"
+              ],
+              "minutes": 40
+            },
+            {
+              "day": 19,
+              "focus": "Behavioural Mastery, STAR Stories & Leadership Scenarios",
+              "question_ids": [
+                "q3"
+              ],
+              "minutes": 40
+            },
+            {
+              "day": 20,
+              "focus": "Company Mission, Values & Culture Alignment",
+              "question_ids": [
+                "q4"
+              ],
+              "minutes": 30
+            },
+            {
+              "day": 21,
+              "focus": "System Architecture, Scalability & Trade-offs",
+              "question_ids": [
+                "q2"
+              ],
+              "minutes": 55
+            },
+            {
+              "day": 22,
+              "focus": "Technical Deep-Dives, Problem Solving & Algorithms",
+              "question_ids": [
+                "q1"
+              ],
+              "minutes": 55
+            },
+            {
+              "day": 23,
+              "focus": "Technical Deep-Dives, Problem Solving & Algorithms",
+              "question_ids": [
+                "q5"
+              ],
+              "minutes": 40
+            },
+            {
+              "day": 24,
+              "focus": "Behavioural Mastery, STAR Stories & Leadership Scenarios",
+              "question_ids": [
+                "q3"
+              ],
+              "minutes": 40
+            },
+            {
+              "day": 25,
+              "focus": "Company Mission, Values & Culture Alignment",
+              "question_ids": [
+                "q4"
+              ],
+              "minutes": 30
+            },
+            {
+              "day": 26,
+              "focus": "System Architecture, Scalability & Trade-offs",
+              "question_ids": [
+                "q2"
+              ],
+              "minutes": 55
+            },
+            {
+              "day": 27,
+              "focus": "Technical Deep-Dives, Problem Solving & Algorithms",
+              "question_ids": [
+                "q1"
+              ],
+              "minutes": 55
+            },
+            {
+              "day": 28,
+              "focus": "Technical Deep-Dives, Problem Solving & Algorithms",
+              "question_ids": [
+                "q5"
+              ],
+              "minutes": 40
+            },
+            {
+              "day": 29,
+              "focus": "Behavioural Mastery, STAR Stories & Leadership Scenarios",
+              "question_ids": [
+                "q3"
+              ],
+              "minutes": 40
+            },
+            {
+              "day": 30,
+              "focus": "Company Mission, Values & Culture Alignment",
+              "question_ids": [
+                "q4"
+              ],
+              "minutes": 30
+            },
+            {
+              "day": 31,
+              "focus": "System Architecture, Scalability & Trade-offs",
+              "question_ids": [
+                "q2"
+              ],
+              "minutes": 55
+            },
+            {
+              "day": 32,
+              "focus": "Technical Deep-Dives, Problem Solving & Algorithms",
+              "question_ids": [
+                "q1"
+              ],
+              "minutes": 55
+            },
+            {
+              "day": 33,
+              "focus": "Technical Deep-Dives, Problem Solving & Algorithms",
+              "question_ids": [
+                "q5"
+              ],
+              "minutes": 40
+            },
+            {
+              "day": 34,
+              "focus": "Behavioural Mastery, STAR Stories & Leadership Scenarios",
+              "question_ids": [
+                "q3"
+              ],
+              "minutes": 40
+            },
+            {
+              "day": 35,
+              "focus": "Company Mission, Values & Culture Alignment",
+              "question_ids": [
+                "q4"
+              ],
+              "minutes": 30
+            },
+            {
+              "day": 36,
+              "focus": "System Architecture, Scalability & Trade-offs",
+              "question_ids": [
+                "q2"
+              ],
+              "minutes": 55
+            },
+            {
+              "day": 37,
+              "focus": "Technical Deep-Dives, Problem Solving & Algorithms",
+              "question_ids": [
+                "q1"
+              ],
+              "minutes": 55
+            },
+            {
+              "day": 38,
+              "focus": "Technical Deep-Dives, Problem Solving & Algorithms",
+              "question_ids": [
+                "q5"
+              ],
+              "minutes": 40
+            },
+            {
+              "day": 39,
+              "focus": "Behavioural Mastery, STAR Stories & Leadership Scenarios",
+              "question_ids": [
+                "q3"
+              ],
+              "minutes": 40
+            },
+            {
+              "day": 40,
+              "focus": "Company Mission, Values & Culture Alignment",
+              "question_ids": [
+                "q4"
+              ],
+              "minutes": 30
+            },
+            {
+              "day": 41,
+              "focus": "System Architecture, Scalability & Trade-offs",
+              "question_ids": [
+                "q2"
+              ],
+              "minutes": 55
+            },
+            {
+              "day": 42,
+              "focus": "Technical Deep-Dives, Problem Solving & Algorithms",
+              "question_ids": [
+                "q1"
+              ],
+              "minutes": 55
+            },
+            {
+              "day": 43,
+              "focus": "Technical Deep-Dives, Problem Solving & Algorithms",
+              "question_ids": [
+                "q5"
+              ],
+              "minutes": 40
+            },
+            {
+              "day": 44,
+              "focus": "Behavioural Mastery, STAR Stories & Leadership Scenarios",
+              "question_ids": [
+                "q3"
+              ],
+              "minutes": 40
+            },
+            {
+              "day": 45,
+              "focus": "Company Mission, Values & Culture Alignment",
+              "question_ids": [
+                "q4"
+              ],
+              "minutes": 30
+            },
+            {
+              "day": 46,
+              "focus": "System Architecture, Scalability & Trade-offs",
+              "question_ids": [
+                "q2"
+              ],
+              "minutes": 55
+            },
+            {
+              "day": 47,
+              "focus": "Technical Deep-Dives, Problem Solving & Algorithms",
+              "question_ids": [
+                "q1"
+              ],
+              "minutes": 55
+            },
+            {
+              "day": 48,
+              "focus": "Technical Deep-Dives, Problem Solving & Algorithms",
+              "question_ids": [
+                "q5"
+              ],
+              "minutes": 40
+            },
+            {
+              "day": 49,
+              "focus": "Behavioural Mastery, STAR Stories & Leadership Scenarios",
+              "question_ids": [
+                "q3"
+              ],
+              "minutes": 40
+            },
+            {
+              "day": 50,
+              "focus": "Company Mission, Values & Culture Alignment",
+              "question_ids": [
+                "q4"
+              ],
+              "minutes": 30
+            },
+            {
+              "day": 51,
+              "focus": "System Architecture, Scalability & Trade-offs",
+              "question_ids": [
+                "q2"
+              ],
+              "minutes": 55
+            },
+            {
+              "day": 52,
+              "focus": "Technical Deep-Dives, Problem Solving & Algorithms",
+              "question_ids": [
+                "q1"
+              ],
+              "minutes": 55
+            },
+            {
+              "day": 53,
+              "focus": "Technical Deep-Dives, Problem Solving & Algorithms",
+              "question_ids": [
+                "q5"
+              ],
+              "minutes": 40
+            },
+            {
+              "day": 54,
+              "focus": "Behavioural Mastery, STAR Stories & Leadership Scenarios",
+              "question_ids": [
+                "q3"
+              ],
+              "minutes": 40
+            },
+            {
+              "day": 55,
+              "focus": "Company Mission, Values & Culture Alignment",
+              "question_ids": [
+                "q4"
+              ],
+              "minutes": 30
+            },
+            {
+              "day": 56,
+              "focus": "System Architecture, Scalability & Trade-offs",
+              "question_ids": [
+                "q2"
+              ],
+              "minutes": 55
+            },
+            {
+              "day": 57,
+              "focus": "Technical Deep-Dives, Problem Solving & Algorithms",
+              "question_ids": [
+                "q1"
+              ],
+              "minutes": 55
+            },
+            {
+              "day": 58,
+              "focus": "Technical Deep-Dives, Problem Solving & Algorithms",
+              "question_ids": [
+                "q5"
+              ],
+              "minutes": 40
+            },
+            {
+              "day": 59,
+              "focus": "Behavioural Mastery, STAR Stories & Leadership Scenarios",
+              "question_ids": [
+                "q3"
+              ],
+              "minutes": 40
+            },
+            {
+              "day": 60,
+              "focus": "Final Polish, Company Alignment & Mindset Preparation",
+              "question_ids": [
+                "q4"
+              ],
+              "minutes": 30
+            }
+          ]
+        },
+        "coverage": {
+          "uncovered_requirement_ids": [
+            "r4"
+          ],
+          "passes": 2
+        }
+      },
+      "error": null
+    }
+  ]
+}

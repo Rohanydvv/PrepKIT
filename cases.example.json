@@ -1,0 +1,26 @@
+[
+  {
+    "id": "case-01",
+    "jd": "Senior Backend Engineer\n\nWe are looking for an experienced engineer with 5+ years of Node.js and distributed systems.\n\nRequired:\n- Deep expertise in Node.js, TypeScript, and microservices architecture\n- Experience designing fault-tolerant high-throughput REST and gRPC APIs\n- Proven leadership in mentoring junior engineers and conducting code reviews\n\nNice to have:\n- Hands-on experience with Kafka and Redis caching\n- Knowledge of Kubernetes and CI/CD pipelines",
+    "company_url": "https://posthog.com",
+    "days": 5
+  },
+  {
+    "id": "case-02",
+    "jd": "Full-Stack Software Engineer\n\nJoin our engineering team to build customer-facing web apps.\n\nMust-have:\n- 3+ years with React and modern frontend state management\n- Solid understanding of relational database schema design (PostgreSQL)\n\nBonus points for:\n- Familiarity with Next.js App Router\n- Experience in fintech or financial ledger systems",
+    "company_url": "https://github.com",
+    "days": 3
+  },
+  {
+    "id": "case-03-stub",
+    "jd": "Junior Web Developer\n\nLooking for an eager developer to fix bugs and build landing pages. Must know HTML, CSS, JavaScript.",
+    "company_url": "https://python.org",
+    "days": 1
+  },
+  {
+    "id": "case-04-60days",
+    "jd": "Staff Systems Architect\n\nLeading company seeks Staff Architect for our core payments processing platform.\n\nMust-have:\n- 10+ years designing enterprise distributed transactions\n- Expertise in zero-downtime database migrations\n- Cross-team technical leadership and RFC authoring",
+    "company_url": "https://stripe.com",
+    "days": 60
+  }
+]
