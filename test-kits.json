@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "generated_at": "2026-09-21T20:34:54.479Z",
+  "generated_at": "2026-09-22T20:19:39.841Z",
   "kits": [
     {
       "id": "case-01",
@@ -12,7 +12,7 @@
           "role": "Senior Backend Engineer",
           "location": "Unspecified",
           "jd_chars": 463,
-          "researched_at": "2026-09-21T20:34:48.284Z",
+          "researched_at": "2026-09-22T20:19:34.389Z",
           "pages_used": [
             "https://posthog.com/",
             "https://posthog.com/careers",
@@ -81,66 +81,118 @@
               "r1"
             ],
             "category": "technical",
-            "prompt": "Explain how you manage state and handle performance bottlenecks in high-throughput applications.",
-            "answer_outline": "Discuss architectural separation, profiling tools, caching strategies, and memory management.",
-            "difficulty": 3
+            "prompt": "In a high-concurrency Node.js and TypeScript environment, how do you diagnose event-loop lag, manage memory leaks, and structure asynchronous workflows safely?",
+            "answer_outline": "Cover event loop phases (timers, poll, check), worker threads for CPU-bound tasks, stream backpressure, heap memory profiling, and TypeScript strict typing practices.",
+            "difficulty": 2
           },
           {
             "id": "q2",
             "requirement_ids": [
-              "r1"
+              "r2"
             ],
-            "category": "system-design",
-            "prompt": "How would you architect a distributed service handling sudden 10x traffic spikes?",
-            "answer_outline": "Propose rate-limiting, message queues for asynchronous ingestion, horizontal autoscaling, and database read replicas.",
-            "difficulty": 3
+            "category": "technical",
+            "prompt": "How do you leverage TypeScript's advanced type system (conditional types, mapped types, template literal types) to build type-safe API clients and data validation layers?",
+            "answer_outline": "Explain generative utility types, branded primitive types, runtime Zod/TypeBox validation, compile-time exhaustive checks, and eliminating 'any'.",
+            "difficulty": 2
           },
           {
             "id": "q3",
             "requirement_ids": [
-              "r2"
+              "r3"
             ],
-            "category": "behavioural",
-            "prompt": "Describe a situation where you had a disagreement with a team member about technical architecture. How did you resolve it?",
-            "answer_outline": "Situation: conflicting design choices. Task: align on technical direction. Action: evaluated trade-offs with benchmark data. Result: consensus and on-time delivery.",
-            "difficulty": 2
+            "category": "technical",
+            "prompt": "When designing high-throughput inter-service communication, how do you decide between REST/JSON and gRPC/Protobuf? How do you ensure backward compatibility, rate-limiting, and graceful error handling?",
+            "answer_outline": "Compare binary Protobuf serialization and HTTP/2 multiplexing with REST simplicity. Address semantic versioning, client SDKs, deadline propagation, and circuit breaking.",
+            "difficulty": 3
           },
           {
             "id": "q4",
             "requirement_ids": [
-              "r1"
+              "r4"
             ],
-            "category": "company-fit",
-            "prompt": "Why are you interested in working on our core tech stack and product mission?",
-            "answer_outline": "Connect personal engineering strengths to the company's product trajectory and customer impact.",
-            "difficulty": 1
+            "category": "behavioural",
+            "prompt": "Describe a situation where you had to lead a critical technical decision or mentor an engineer through a complex architectural challenge. How did you handle trade-offs and build team consensus?",
+            "answer_outline": "Structure with STAR: Highlight initial disagreement, evaluation criteria/RFC, proactive guidance, and measurable positive delivery outcome.",
+            "difficulty": 2
           },
           {
             "id": "q5",
             "requirement_ids": [
-              "r3"
+              "r5"
+            ],
+            "category": "system-design",
+            "prompt": "Describe how you design a production-grade event-driven pipeline using Kafka or similar message streaming systems. How do you handle partition rebalancing, consumer lag, and out-of-order event delivery?",
+            "answer_outline": "Cover partition keys for ordering guarantees, idempotent consumers, dead-letter queues, backpressure handling, and end-to-end monitoring metrics.",
+            "difficulty": 3
+          },
+          {
+            "id": "q6",
+            "requirement_ids": [
+              "r6"
             ],
             "category": "technical",
-            "prompt": "Walk me through how you ensure test coverage and reliability for this requirement in production.",
-            "answer_outline": "Unit tests, integration testing with testcontainers, automated CI checks, and canary deployments.",
+            "prompt": "Walk through how you design automated deployment pipelines and infrastructure as code to guarantee zero-downtime releases and rapid rollback capabilities.",
+            "answer_outline": "Discuss declarative infrastructure with Terraform, Kubernetes rolling updates vs canary releases, health probes, and automated smoke testing.",
             "difficulty": 2
+          },
+          {
+            "id": "q7",
+            "requirement_ids": [
+              "r1"
+            ],
+            "category": "company-fit",
+            "prompt": "How do your technical strengths, architectural principles, and engineering values align with our product mission and high-velocity shipping culture?",
+            "answer_outline": "Demonstrate engineering empathy, customer impact focus, ownership mindset, and alignment with modern software engineering practices.",
+            "difficulty": 1
           }
         ],
         "flashcards": [
           {
             "id": "f1",
-            "front": "What are the primary trade-offs of microservices vs monolithic architectures?",
-            "back": "Microservices offer independent scalability and deployment isolation at the cost of operational complexity, distributed tracing overhead, and network latency.",
+            "front": "Node.js Performance: What happens when CPU-intensive computation runs on the main thread?",
+            "back": "The single-threaded event loop blocks, delaying all I/O polling, timers, and active connections. CPU-heavy work must be offloaded to worker threads or external worker queues.",
             "requirement_ids": [
               "r1"
             ]
           },
           {
             "id": "f2",
-            "front": "Explain the STAR technique for behavioural questions.",
-            "back": "Situation (context), Task (objective), Action (specific steps YOU took), Result (measurable outcome and lessons learned).",
+            "front": "TypeScript Strictness: How do unknown and any differ in type safety and assignment?",
+            "back": "'any' turns off all type checking, allowing unsafe property access. 'unknown' requires explicit type narrowing (typeof, instanceof, user-defined type guards) before use.",
             "requirement_ids": [
               "r2"
+            ]
+          },
+          {
+            "id": "f3",
+            "front": "API Design: When should you prefer gRPC over REST/JSON in a microservices ecosystem?",
+            "back": "gRPC uses HTTP/2 multiplexing, compact Protobuf binary serialization, and strongly-typed contracts, delivering 5-10x throughput with lower latency for internal inter-service RPCs.",
+            "requirement_ids": [
+              "r3"
+            ]
+          },
+          {
+            "id": "f4",
+            "front": "STAR Behavioural Framework: What are the 4 essential components?",
+            "back": "S (Situation: technical context), T (Task: your objective), A (Action: specific engineering initiatives you took), R (Result: measurable outcome and business impact).",
+            "requirement_ids": [
+              "r4"
+            ]
+          },
+          {
+            "id": "f5",
+            "front": "Caching Strategies: How do you prevent cache stampedes (thundering herd) during key eviction?",
+            "back": "Implement probabilistic early expiration (XFetch algorithm) or use distributed mutex locking so only a single background worker regenerates the cache while others read stale data.",
+            "requirement_ids": [
+              "r5"
+            ]
+          },
+          {
+            "id": "f6",
+            "front": "Production Reliability: What is the difference between liveness and readiness probes?",
+            "back": "Liveness probe checks if the container process is alive (restarts if failed). Readiness probe checks if the pod can accept client traffic (removes from service endpoints if failed).",
+            "requirement_ids": [
+              "r6"
             ]
           }
         ],
@@ -149,53 +201,54 @@
           "days": [
             {
               "day": 1,
-              "focus": "Core Architecture & High-Priority Technical Foundations",
+              "focus": "Role Foundation & Technical Core: Distributed Architecture",
               "question_ids": [
-                "q2"
+                "q7",
+                "q3",
+                "q1"
               ],
-              "minutes": 55
+              "minutes": 90
             },
             {
               "day": 2,
-              "focus": "Technical Deep-Dives, Problem Solving & Algorithms",
+              "focus": "Technical Core Mastery: Node.js & TypeScript",
               "question_ids": [
-                "q1"
+                "q2",
+                "q6"
+              ],
+              "minutes": 65
+            },
+            {
+              "day": 3,
+              "focus": "Distributed Systems, High-Throughput & Fault Tolerance",
+              "question_ids": [
+                "q5"
               ],
               "minutes": 55
             },
             {
-              "day": 3,
-              "focus": "Technical Deep-Dives, Problem Solving & Algorithms",
-              "question_ids": [
-                "q5"
-              ],
-              "minutes": 40
-            },
-            {
               "day": 4,
-              "focus": "Behavioural Mastery, STAR Stories & Leadership Scenarios",
+              "focus": "Engineering Leadership, Mentoring & Collaboration Mastery",
               "question_ids": [
-                "q3"
+                "q4"
               ],
               "minutes": 40
             },
             {
               "day": 5,
-              "focus": "Final Polish, Company Alignment & Mindset Preparation",
+              "focus": "Final Interview Polish, Weak-Area Review & Peak Readiness",
               "question_ids": [
+                "q5",
+                "q3",
                 "q4"
               ],
-              "minutes": 30
+              "minutes": 90
             }
           ]
         },
         "coverage": {
-          "uncovered_requirement_ids": [
-            "r4",
-            "r5",
-            "r6"
-          ],
-          "passes": 2
+          "uncovered_requirement_ids": [],
+          "passes": 1
         }
       },
       "error": null
@@ -210,7 +263,7 @@
           "role": "Full-Stack Software Engineer",
           "location": "Unspecified",
           "jd_chars": 342,
-          "researched_at": "2026-09-21T20:34:49.950Z",
+          "researched_at": "2026-09-22T20:19:35.956Z",
           "pages_used": [
             "https://github.com/",
             "https://github.com/customer-stories/figma"
@@ -255,12 +308,6 @@
               "text": "Experience in fintech or financial ledger systems",
               "kind": "domain",
               "priority": "must"
-            },
-            {
-              "id": "r5",
-              "text": "Please extract the role breakdown and requirements according to the instructions.",
-              "kind": "technical",
-              "priority": "must"
             }
           ]
         },
@@ -314,23 +361,49 @@
             "prompt": "Walk me through how you ensure test coverage and reliability for this requirement in production.",
             "answer_outline": "Unit tests, integration testing with testcontainers, automated CI checks, and canary deployments.",
             "difficulty": 2
+          },
+          {
+            "id": "q6",
+            "requirement_ids": [
+              "r4"
+            ],
+            "category": "technical",
+            "prompt": "Can you walk through your practical engineering experience with Experience in fintech or financial ledger systems? What architectural trade-offs and edge cases did you encounter in production?",
+            "answer_outline": "Explain core principles, real production application, trade-offs evaluated, and measurable outcomes.",
+            "difficulty": 2
           }
         ],
         "flashcards": [
           {
             "id": "f1",
-            "front": "What are the primary trade-offs of microservices vs monolithic architectures?",
-            "back": "Microservices offer independent scalability and deployment isolation at the cost of operational complexity, distributed tracing overhead, and network latency.",
+            "front": "React Optimization: How does React's Reconciliation differ from DOM mutation?",
+            "back": "React builds and diffs an in-memory Virtual DOM tree using Fiber fibers. Only dirty nodes with changed props or state trigger physical, batched browser DOM updates.",
             "requirement_ids": [
               "r1"
             ]
           },
           {
             "id": "f2",
-            "front": "Explain the STAR technique for behavioural questions.",
-            "back": "Situation (context), Task (objective), Action (specific steps YOU took), Result (measurable outcome and lessons learned).",
+            "front": "Databases: When should you choose a columnar database (ClickHouse) over an OLTP RDBMS (PostgreSQL)?",
+            "back": "OLTP RDBMS excels at normalized transactions, row-level ACID updates, and foreign keys. Columnar OLAP excels at high-throughput append-only ingestion and aggregation queries over billions of rows.",
             "requirement_ids": [
               "r2"
+            ]
+          },
+          {
+            "id": "f3",
+            "front": "Core Principles: What are the primary production trade-offs of Familiarity with Next.js App Router?",
+            "back": "Balance throughput, operational complexity, testability, failure isolation, and developer maintenance velocity.",
+            "requirement_ids": [
+              "r3"
+            ]
+          },
+          {
+            "id": "f4",
+            "front": "Core Principles: What are the primary production trade-offs of Experience in fintech or financial ledger systems?",
+            "back": "Balance throughput, operational complexity, testability, failure isolation, and developer maintenance velocity.",
+            "requirement_ids": [
+              "r4"
             ]
           }
         ],
@@ -339,37 +412,36 @@
           "days": [
             {
               "day": 1,
-              "focus": "Core Architecture & High-Priority Technical Foundations",
+              "focus": "Role Foundation & Technical Core: Frontend & Performance",
               "question_ids": [
-                "q2",
-                "q1"
+                "q1",
+                "q5",
+                "q6",
+                "q4"
               ],
-              "minutes": 95
+              "minutes": 90
             },
             {
               "day": 2,
-              "focus": "Technical Deep-Dives, Problem Solving & Algorithms",
+              "focus": "Distributed Systems, High-Throughput & Fault Tolerance",
               "question_ids": [
-                "q5",
-                "q3"
+                "q2"
               ],
-              "minutes": 65
+              "minutes": 55
             },
             {
               "day": 3,
-              "focus": "Final Polish, Company Alignment & Mindset Preparation",
+              "focus": "Final Interview Polish, Weak-Area Review & Peak Readiness",
               "question_ids": [
-                "q4"
+                "q3",
+                "q2"
               ],
-              "minutes": 30
+              "minutes": 80
             }
           ]
         },
         "coverage": {
-          "uncovered_requirement_ids": [
-            "r4",
-            "r5"
-          ],
+          "uncovered_requirement_ids": [],
           "passes": 2
         }
       },
@@ -385,7 +457,7 @@
           "role": "Junior Web Developer",
           "location": "Unspecified",
           "jd_chars": 122,
-          "researched_at": "2026-09-21T20:34:51.403Z",
+          "researched_at": "2026-09-22T20:19:36.812Z",
           "pages_used": [
             "https://python.org/",
             "https://python.org/jobs/",
@@ -405,19 +477,13 @@
           "title": "Junior Web Developer",
           "seniority": "Junior",
           "responsibilities": [
-            "Build and architect core systems for the role",
-            "Collaborate with product and cross-functional engineering teams"
+            "Architect and build production systems aligned with Junior Web Developer standards",
+            "Collaborate with cross-functional engineering and product stakeholders"
           ],
           "requirements": [
             {
               "id": "r1",
-              "text": "Looking for an eager developer to fix bugs and build landing pages. Must know HTML, CSS, JavaScript.",
-              "kind": "technical",
-              "priority": "must"
-            },
-            {
-              "id": "r2",
-              "text": "Please extract the role breakdown and requirements according to the instructions.",
+              "text": "Must know HTML, CSS, JavaScript",
               "kind": "technical",
               "priority": "must"
             }
@@ -447,7 +513,7 @@
           {
             "id": "q3",
             "requirement_ids": [
-              "r2"
+              "r1"
             ],
             "category": "behavioural",
             "prompt": "Describe a situation where you had a disagreement with a team member about technical architecture. How did you resolve it?",
@@ -479,7 +545,7 @@
             "front": "Explain the STAR technique for behavioural questions.",
             "back": "Situation (context), Task (objective), Action (specific steps YOU took), Result (measurable outcome and lessons learned).",
             "requirement_ids": [
-              "r2"
+              "r1"
             ]
           }
         ],
@@ -488,14 +554,14 @@
           "days": [
             {
               "day": 1,
-              "focus": "High-Yield Intensive Preparation: Core Must-Haves & Architecture",
+              "focus": "High-Yield Intensive Sprint: Core Must-Haves & Architecture",
               "question_ids": [
                 "q2",
                 "q1",
                 "q3",
                 "q4"
               ],
-              "minutes": 135
+              "minutes": 90
             }
           ]
         },
@@ -516,7 +582,7 @@
           "role": "Staff Systems Architect",
           "location": "Unspecified",
           "jd_chars": 276,
-          "researched_at": "2026-09-21T20:34:54.478Z",
+          "researched_at": "2026-09-22T20:19:39.841Z",
           "pages_used": [
             "https://stripe.com/",
             "https://stripe.com/in/careers",
@@ -557,12 +623,6 @@
               "text": "Cross-team technical leadership and RFC authoring",
               "kind": "behavioural",
               "priority": "must"
-            },
-            {
-              "id": "r4",
-              "text": "Please extract the role breakdown and requirements according to the instructions.",
-              "kind": "technical",
-              "priority": "must"
             }
           ]
         },
@@ -621,18 +681,26 @@
         "flashcards": [
           {
             "id": "f1",
-            "front": "What are the primary trade-offs of microservices vs monolithic architectures?",
-            "back": "Microservices offer independent scalability and deployment isolation at the cost of operational complexity, distributed tracing overhead, and network latency.",
+            "front": "Core Principles: What are the primary production trade-offs of 10+ years designing enterprise distributed transactions?",
+            "back": "Balance throughput, operational complexity, testability, failure isolation, and developer maintenance velocity.",
             "requirement_ids": [
               "r1"
             ]
           },
           {
             "id": "f2",
-            "front": "Explain the STAR technique for behavioural questions.",
-            "back": "Situation (context), Task (objective), Action (specific steps YOU took), Result (measurable outcome and lessons learned).",
+            "front": "Databases: When should you choose a columnar database (ClickHouse) over an OLTP RDBMS (PostgreSQL)?",
+            "back": "OLTP RDBMS excels at normalized transactions, row-level ACID updates, and foreign keys. Columnar OLAP excels at high-throughput append-only ingestion and aggregation queries over billions of rows.",
             "requirement_ids": [
               "r2"
+            ]
+          },
+          {
+            "id": "f3",
+            "front": "STAR Behavioural Framework: What are the 4 essential components?",
+            "back": "S (Situation: technical context), T (Task: your objective), A (Action: specific engineering initiatives you took), R (Result: measurable outcome and business impact).",
+            "requirement_ids": [
+              "r3"
             ]
           }
         ],
@@ -641,7 +709,7 @@
           "days": [
             {
               "day": 1,
-              "focus": "Core Architecture & High-Priority Technical Foundations",
+              "focus": "Role Foundation & Technical Core: Distributed Architecture",
               "question_ids": [
                 "q2"
               ],
@@ -649,7 +717,7 @@
             },
             {
               "day": 2,
-              "focus": "Technical Deep-Dives, Problem Solving & Algorithms",
+              "focus": "Technical Core Mastery: Distributed Architecture",
               "question_ids": [
                 "q1"
               ],
@@ -657,7 +725,7 @@
             },
             {
               "day": 3,
-              "focus": "Technical Deep-Dives, Problem Solving & Algorithms",
+              "focus": "Technical Core Mastery: Technical Leadership",
               "question_ids": [
                 "q5"
               ],
@@ -665,7 +733,7 @@
             },
             {
               "day": 4,
-              "focus": "Behavioural Mastery, STAR Stories & Leadership Scenarios",
+              "focus": "Engineering Leadership, Mentoring & Collaboration Mastery",
               "question_ids": [
                 "q3"
               ],
@@ -673,7 +741,7 @@
             },
             {
               "day": 5,
-              "focus": "Company Mission, Values & Culture Alignment",
+              "focus": "Company Mission, Product Architecture & Impact Fit",
               "question_ids": [
                 "q4"
               ],
@@ -681,7 +749,7 @@
             },
             {
               "day": 6,
-              "focus": "System Architecture, Scalability & Trade-offs",
+              "focus": "Distributed Systems, High-Throughput & Fault Tolerance",
               "question_ids": [
                 "q2"
               ],
@@ -689,7 +757,7 @@
             },
             {
               "day": 7,
-              "focus": "Technical Deep-Dives, Problem Solving & Algorithms",
+              "focus": "Technical Core Mastery: Distributed Architecture",
               "question_ids": [
                 "q1"
               ],
@@ -697,7 +765,7 @@
             },
             {
               "day": 8,
-              "focus": "Technical Deep-Dives, Problem Solving & Algorithms",
+              "focus": "Technical Core Mastery: Technical Leadership",
               "question_ids": [
                 "q5"
               ],
@@ -705,7 +773,7 @@
             },
             {
               "day": 9,
-              "focus": "Behavioural Mastery, STAR Stories & Leadership Scenarios",
+              "focus": "Engineering Leadership, Mentoring & Collaboration Mastery",
               "question_ids": [
                 "q3"
               ],
@@ -713,7 +781,7 @@
             },
             {
               "day": 10,
-              "focus": "Company Mission, Values & Culture Alignment",
+              "focus": "Company Mission, Product Architecture & Impact Fit",
               "question_ids": [
                 "q4"
               ],
@@ -721,7 +789,7 @@
             },
             {
               "day": 11,
-              "focus": "System Architecture, Scalability & Trade-offs",
+              "focus": "Distributed Systems, High-Throughput & Fault Tolerance",
               "question_ids": [
                 "q2"
               ],
@@ -729,7 +797,7 @@
             },
             {
               "day": 12,
-              "focus": "Technical Deep-Dives, Problem Solving & Algorithms",
+              "focus": "Technical Core Mastery: Distributed Architecture",
               "question_ids": [
                 "q1"
               ],
@@ -737,7 +805,7 @@
             },
             {
               "day": 13,
-              "focus": "Technical Deep-Dives, Problem Solving & Algorithms",
+              "focus": "Technical Core Mastery: Technical Leadership",
               "question_ids": [
                 "q5"
               ],
@@ -745,7 +813,7 @@
             },
             {
               "day": 14,
-              "focus": "Behavioural Mastery, STAR Stories & Leadership Scenarios",
+              "focus": "Engineering Leadership, Mentoring & Collaboration Mastery",
               "question_ids": [
                 "q3"
               ],
@@ -753,7 +821,7 @@
             },
             {
               "day": 15,
-              "focus": "Company Mission, Values & Culture Alignment",
+              "focus": "Company Mission, Product Architecture & Impact Fit",
               "question_ids": [
                 "q4"
               ],
@@ -761,7 +829,7 @@
             },
             {
               "day": 16,
-              "focus": "System Architecture, Scalability & Trade-offs",
+              "focus": "Distributed Systems, High-Throughput & Fault Tolerance",
               "question_ids": [
                 "q2"
               ],
@@ -769,7 +837,7 @@
             },
             {
               "day": 17,
-              "focus": "Technical Deep-Dives, Problem Solving & Algorithms",
+              "focus": "Technical Core Mastery: Distributed Architecture",
               "question_ids": [
                 "q1"
               ],
@@ -777,7 +845,7 @@
             },
             {
               "day": 18,
-              "focus": "Technical Deep-Dives, Problem Solving & Algorithms",
+              "focus": "Technical Core Mastery: Technical Leadership",
               "question_ids": [
                 "q5"
               ],
@@ -785,223 +853,223 @@
             },
             {
               "day": 19,
-              "focus": "Behavioural Mastery, STAR Stories & Leadership Scenarios",
-              "question_ids": [
-                "q3"
-              ],
-              "minutes": 40
-            },
-            {
-              "day": 20,
-              "focus": "Company Mission, Values & Culture Alignment",
-              "question_ids": [
-                "q4"
-              ],
-              "minutes": 30
-            },
-            {
-              "day": 21,
-              "focus": "System Architecture, Scalability & Trade-offs",
+              "focus": "Distributed Systems, High-Throughput & Fault Tolerance",
               "question_ids": [
                 "q2"
               ],
               "minutes": 55
             },
             {
-              "day": 22,
-              "focus": "Technical Deep-Dives, Problem Solving & Algorithms",
+              "day": 20,
+              "focus": "Technical Core Mastery: Distributed Architecture",
               "question_ids": [
                 "q1"
+              ],
+              "minutes": 55
+            },
+            {
+              "day": 21,
+              "focus": "Technical Core Mastery: Technical Leadership",
+              "question_ids": [
+                "q5"
+              ],
+              "minutes": 40
+            },
+            {
+              "day": 22,
+              "focus": "Distributed Systems, High-Throughput & Fault Tolerance",
+              "question_ids": [
+                "q2"
               ],
               "minutes": 55
             },
             {
               "day": 23,
-              "focus": "Technical Deep-Dives, Problem Solving & Algorithms",
+              "focus": "Technical Core Mastery: Distributed Architecture",
               "question_ids": [
-                "q5"
+                "q1"
               ],
-              "minutes": 40
+              "minutes": 55
             },
             {
               "day": 24,
-              "focus": "Behavioural Mastery, STAR Stories & Leadership Scenarios",
+              "focus": "Technical Core Mastery: Technical Leadership",
               "question_ids": [
-                "q3"
+                "q5"
               ],
               "minutes": 40
             },
             {
               "day": 25,
-              "focus": "Company Mission, Values & Culture Alignment",
+              "focus": "Distributed Systems, High-Throughput & Fault Tolerance",
               "question_ids": [
-                "q4"
+                "q2"
               ],
-              "minutes": 30
+              "minutes": 55
             },
             {
               "day": 26,
-              "focus": "System Architecture, Scalability & Trade-offs",
+              "focus": "Technical Core Mastery: Distributed Architecture",
               "question_ids": [
-                "q2"
+                "q1"
               ],
               "minutes": 55
             },
             {
               "day": 27,
-              "focus": "Technical Deep-Dives, Problem Solving & Algorithms",
-              "question_ids": [
-                "q1"
-              ],
-              "minutes": 55
-            },
-            {
-              "day": 28,
-              "focus": "Technical Deep-Dives, Problem Solving & Algorithms",
+              "focus": "Technical Core Mastery: Technical Leadership",
               "question_ids": [
                 "q5"
               ],
               "minutes": 40
             },
             {
-              "day": 29,
-              "focus": "Behavioural Mastery, STAR Stories & Leadership Scenarios",
-              "question_ids": [
-                "q3"
-              ],
-              "minutes": 40
-            },
-            {
-              "day": 30,
-              "focus": "Company Mission, Values & Culture Alignment",
-              "question_ids": [
-                "q4"
-              ],
-              "minutes": 30
-            },
-            {
-              "day": 31,
-              "focus": "System Architecture, Scalability & Trade-offs",
+              "day": 28,
+              "focus": "Distributed Systems, High-Throughput & Fault Tolerance",
               "question_ids": [
                 "q2"
               ],
               "minutes": 55
             },
             {
-              "day": 32,
-              "focus": "Technical Deep-Dives, Problem Solving & Algorithms",
+              "day": 29,
+              "focus": "Technical Core Mastery: Distributed Architecture",
               "question_ids": [
                 "q1"
+              ],
+              "minutes": 55
+            },
+            {
+              "day": 30,
+              "focus": "Technical Core Mastery: Technical Leadership",
+              "question_ids": [
+                "q5"
+              ],
+              "minutes": 40
+            },
+            {
+              "day": 31,
+              "focus": "Engineering Leadership, Mentoring & Collaboration Mastery",
+              "question_ids": [
+                "q3"
+              ],
+              "minutes": 40
+            },
+            {
+              "day": 32,
+              "focus": "Distributed Systems, High-Throughput & Fault Tolerance",
+              "question_ids": [
+                "q2"
               ],
               "minutes": 55
             },
             {
               "day": 33,
-              "focus": "Technical Deep-Dives, Problem Solving & Algorithms",
+              "focus": "Technical Core Mastery: Distributed Architecture",
               "question_ids": [
-                "q5"
+                "q1"
               ],
-              "minutes": 40
+              "minutes": 55
             },
             {
               "day": 34,
-              "focus": "Behavioural Mastery, STAR Stories & Leadership Scenarios",
+              "focus": "Technical Core Mastery: Technical Leadership",
               "question_ids": [
-                "q3"
+                "q5"
               ],
               "minutes": 40
             },
             {
               "day": 35,
-              "focus": "Company Mission, Values & Culture Alignment",
-              "question_ids": [
-                "q4"
-              ],
-              "minutes": 30
-            },
-            {
-              "day": 36,
-              "focus": "System Architecture, Scalability & Trade-offs",
-              "question_ids": [
-                "q2"
-              ],
-              "minutes": 55
-            },
-            {
-              "day": 37,
-              "focus": "Technical Deep-Dives, Problem Solving & Algorithms",
-              "question_ids": [
-                "q1"
-              ],
-              "minutes": 55
-            },
-            {
-              "day": 38,
-              "focus": "Technical Deep-Dives, Problem Solving & Algorithms",
-              "question_ids": [
-                "q5"
-              ],
-              "minutes": 40
-            },
-            {
-              "day": 39,
-              "focus": "Behavioural Mastery, STAR Stories & Leadership Scenarios",
+              "focus": "Engineering Leadership, Mentoring & Collaboration Mastery",
               "question_ids": [
                 "q3"
               ],
               "minutes": 40
             },
             {
-              "day": 40,
-              "focus": "Company Mission, Values & Culture Alignment",
+              "day": 36,
+              "focus": "Company Mission, Product Architecture & Impact Fit",
               "question_ids": [
                 "q4"
               ],
               "minutes": 30
             },
             {
-              "day": 41,
-              "focus": "System Architecture, Scalability & Trade-offs",
+              "day": 37,
+              "focus": "Spaced Repetition & Deep Recall: Databases & Storage",
+              "question_ids": [
+                "q3"
+              ],
+              "minutes": 40
+            },
+            {
+              "day": 38,
+              "focus": "Spaced Repetition & Deep Recall: Distributed Architecture",
               "question_ids": [
                 "q2"
               ],
               "minutes": 55
             },
             {
-              "day": 42,
-              "focus": "Technical Deep-Dives, Problem Solving & Algorithms",
+              "day": 39,
+              "focus": "Spaced Repetition & Deep Recall: Distributed Architecture",
               "question_ids": [
                 "q1"
               ],
               "minutes": 55
             },
             {
-              "day": 43,
-              "focus": "Technical Deep-Dives, Problem Solving & Algorithms",
+              "day": 40,
+              "focus": "Spaced Repetition & Deep Recall: Technical Leadership",
               "question_ids": [
                 "q5"
+              ],
+              "minutes": 40
+            },
+            {
+              "day": 41,
+              "focus": "Spaced Repetition & Deep Recall: Databases & Storage",
+              "question_ids": [
+                "q3"
+              ],
+              "minutes": 40
+            },
+            {
+              "day": 42,
+              "focus": "Spaced Repetition & Deep Recall: Distributed Architecture",
+              "question_ids": [
+                "q4"
+              ],
+              "minutes": 30
+            },
+            {
+              "day": 43,
+              "focus": "Spaced Repetition & Deep Recall: Databases & Storage",
+              "question_ids": [
+                "q3"
               ],
               "minutes": 40
             },
             {
               "day": 44,
-              "focus": "Behavioural Mastery, STAR Stories & Leadership Scenarios",
+              "focus": "Spaced Repetition & Deep Recall: Distributed Architecture",
               "question_ids": [
-                "q3"
+                "q2"
               ],
-              "minutes": 40
+              "minutes": 55
             },
             {
               "day": 45,
-              "focus": "Company Mission, Values & Culture Alignment",
+              "focus": "Spaced Repetition & Deep Recall: Distributed Architecture",
               "question_ids": [
-                "q4"
+                "q1"
               ],
-              "minutes": 30
+              "minutes": 55
             },
             {
               "day": 46,
-              "focus": "System Architecture, Scalability & Trade-offs",
+              "focus": "Spaced Repetition & Deep Recall: Distributed Architecture",
               "question_ids": [
                 "q2"
               ],
@@ -1009,7 +1077,7 @@
             },
             {
               "day": 47,
-              "focus": "Technical Deep-Dives, Problem Solving & Algorithms",
+              "focus": "Spaced Repetition & Deep Recall: Distributed Architecture",
               "question_ids": [
                 "q1"
               ],
@@ -1017,7 +1085,7 @@
             },
             {
               "day": 48,
-              "focus": "Technical Deep-Dives, Problem Solving & Algorithms",
+              "focus": "Spaced Repetition & Deep Recall: Technical Leadership",
               "question_ids": [
                 "q5"
               ],
@@ -1025,7 +1093,7 @@
             },
             {
               "day": 49,
-              "focus": "Behavioural Mastery, STAR Stories & Leadership Scenarios",
+              "focus": "Spaced Repetition & Deep Recall: Databases & Storage",
               "question_ids": [
                 "q3"
               ],
@@ -1033,7 +1101,7 @@
             },
             {
               "day": 50,
-              "focus": "Company Mission, Values & Culture Alignment",
+              "focus": "Spaced Repetition & Deep Recall: Distributed Architecture",
               "question_ids": [
                 "q4"
               ],
@@ -1041,7 +1109,7 @@
             },
             {
               "day": 51,
-              "focus": "System Architecture, Scalability & Trade-offs",
+              "focus": "Spaced Repetition & Deep Recall: Distributed Architecture",
               "question_ids": [
                 "q2"
               ],
@@ -1049,7 +1117,7 @@
             },
             {
               "day": 52,
-              "focus": "Technical Deep-Dives, Problem Solving & Algorithms",
+              "focus": "Spaced Repetition & Deep Recall: Distributed Architecture",
               "question_ids": [
                 "q1"
               ],
@@ -1057,7 +1125,7 @@
             },
             {
               "day": 53,
-              "focus": "Technical Deep-Dives, Problem Solving & Algorithms",
+              "focus": "Spaced Repetition & Deep Recall: Technical Leadership",
               "question_ids": [
                 "q5"
               ],
@@ -1065,7 +1133,7 @@
             },
             {
               "day": 54,
-              "focus": "Behavioural Mastery, STAR Stories & Leadership Scenarios",
+              "focus": "Spaced Repetition & Deep Recall: Databases & Storage",
               "question_ids": [
                 "q3"
               ],
@@ -1073,7 +1141,7 @@
             },
             {
               "day": 55,
-              "focus": "Company Mission, Values & Culture Alignment",
+              "focus": "Spaced Repetition & Deep Recall: Distributed Architecture",
               "question_ids": [
                 "q4"
               ],
@@ -1081,7 +1149,7 @@
             },
             {
               "day": 56,
-              "focus": "System Architecture, Scalability & Trade-offs",
+              "focus": "Spaced Repetition & Deep Recall: Distributed Architecture",
               "question_ids": [
                 "q2"
               ],
@@ -1089,7 +1157,7 @@
             },
             {
               "day": 57,
-              "focus": "Technical Deep-Dives, Problem Solving & Algorithms",
+              "focus": "Spaced Repetition & Deep Recall: Distributed Architecture",
               "question_ids": [
                 "q1"
               ],
@@ -1097,7 +1165,7 @@
             },
             {
               "day": 58,
-              "focus": "Technical Deep-Dives, Problem Solving & Algorithms",
+              "focus": "Spaced Repetition & Deep Recall: Technical Leadership",
               "question_ids": [
                 "q5"
               ],
@@ -1105,7 +1173,7 @@
             },
             {
               "day": 59,
-              "focus": "Behavioural Mastery, STAR Stories & Leadership Scenarios",
+              "focus": "Spaced Repetition & Deep Recall: Databases & Storage",
               "question_ids": [
                 "q3"
               ],
@@ -1113,7 +1181,7 @@
             },
             {
               "day": 60,
-              "focus": "Final Polish, Company Alignment & Mindset Preparation",
+              "focus": "Final Interview Polish, Weak-Area Review & Peak Readiness",
               "question_ids": [
                 "q4"
               ],
@@ -1122,9 +1190,7 @@
           ]
         },
         "coverage": {
-          "uncovered_requirement_ids": [
-            "r4"
-          ],
+          "uncovered_requirement_ids": [],
           "passes": 2
         }
       },

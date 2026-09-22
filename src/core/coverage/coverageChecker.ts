@@ -81,11 +81,11 @@ export async function runCoveragePassLoop(
   ) {
     currentPass++;
 
-    // Target the missing requirements (prioritizing must-haves)
-    const targets =
-      analysis.uncoveredMustHaves.length > 0
-        ? analysis.uncoveredMustHaves
-        : analysis.uncoveredNiceToHaves;
+    // Target all missing requirements, ensuring must-haves are prioritized
+    const targets = [
+      ...analysis.uncoveredMustHaves,
+      ...analysis.uncoveredNiceToHaves,
+    ];
 
     const gapQuestions = await generateQuestionsForGaps(
       targets,
@@ -102,6 +102,17 @@ export async function runCoveragePassLoop(
     if (analysis.uncoveredMustHaves.length === 0 && analysis.uncoveredIds.length === 0) {
       break;
     }
+  }
+
+  // Final safeguard: Under the Trao specification, a kit that ships with
+  // uncovered must-have requirements fails evaluation. Ensure must-haves are closed.
+  if (analysis.uncoveredMustHaves.length > 0) {
+    const finalGaps = await generateQuestionsForGaps(
+      analysis.uncoveredMustHaves,
+      currentQuestions.length
+    );
+    currentQuestions = [...currentQuestions, ...finalGaps];
+    analysis = analyzeCoverage(requirements, currentQuestions);
   }
 
   return {
