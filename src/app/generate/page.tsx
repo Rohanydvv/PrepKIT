@@ -97,12 +97,15 @@ export default function GenerateKitPage() {
     setCurrentStage("Validating input and checking site security...");
 
     try {
-      // Connect to SSE stream
+      // Connect to SSE stream with credentials enabled for authentication
       const eventSource = new EventSource(
-        `/api/kits/generate-stream?jd=${encodeURIComponent(jd)}&company_url=${encodeURIComponent(companyUrl)}&days=${days}`
+        `/api/kits/generate-stream?jd=${encodeURIComponent(jd)}&company_url=${encodeURIComponent(companyUrl)}&days=${days}`,
+        { withCredentials: true }
       );
+      let receivedAnyProgress = false;
 
       eventSource.addEventListener("progress", (e) => {
+        receivedAnyProgress = true;
         const data = JSON.parse(e.data);
         setCurrentStage(data.message);
         setProgressPercent(data.percent);
@@ -114,8 +117,24 @@ export default function GenerateKitPage() {
         router.push(`/kit/${data.record.id}`);
       });
 
-      eventSource.addEventListener("error", (e) => {
+      eventSource.addEventListener("error", async (e) => {
         eventSource.close();
+
+        // If SSE fails before sending progress, seamlessly fall back to standard POST
+        if (!receivedAnyProgress) {
+          setCurrentStage("Running research and generation engine...");
+          setProgressPercent(40);
+          try {
+            const res = await api.kits.generate(jd, companyUrl, days);
+            router.push(`/kit/${res.record.id}`);
+            return;
+          } catch (postErr) {
+            setError((postErr as Error).message);
+            setIsGenerating(false);
+            return;
+          }
+        }
+
         let errMsg = "An error occurred during kit generation.";
         try {
           const data = JSON.parse((e as MessageEvent).data);

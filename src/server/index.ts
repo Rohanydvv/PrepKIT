@@ -92,71 +92,8 @@ app.get("/api/kits", requireAuth, async (req: AuthenticatedRequest, res: Respons
   res.json({ kits: userKits });
 });
 
-// Get single kit
-app.get("/api/kits/:id", requireAuth, async (req: AuthenticatedRequest, res: Response) => {
-  const userId = req.user!.id;
-  const kitId = String(req.params.id);
-  const record = await dataStore.findKitById(kitId);
-
-  if (!record || record.userId !== userId) {
-    res.status(404).json({ error: "Kit not found" });
-    return;
-  }
-
-  res.json({ record });
-});
-
-// Generate new kit with live Server-Sent Events (SSE) or standard POST
-app.post("/api/kits/generate", requireAuth, async (req: AuthenticatedRequest, res: Response) => {
-  const userId = req.user!.id;
-  const { jd, company_url, days } = req.body;
-
-  if (!jd || typeof jd !== "string" || !jd.trim()) {
-    res.status(400).json({ error: "Job description is required" });
-    return;
-  }
-  if (!company_url || typeof company_url !== "string" || !company_url.trim()) {
-    res.status(400).json({ error: "Company URL is required" });
-    return;
-  }
-
-  const daysInt = parseInt(days, 10) || 5;
-
-  try {
-    const kit = await generateInterviewPrepKit({
-      jd,
-      company_url,
-      days: daysInt,
-    });
-
-    // Initialize item metadata (provenance: generated, is_pinned: false)
-    const meta: StoredKitRecord["meta"] = {};
-    kit.questions.forEach((q) => {
-      meta[q.id] = { provenance: "generated", is_pinned: false };
-    });
-    kit.flashcards.forEach((f) => {
-      meta[f.id] = { provenance: "generated", is_pinned: false };
-    });
-
-    const newRecord: StoredKitRecord = {
-      id: `kit_${crypto.randomUUID()}`,
-      userId,
-      kit,
-      meta,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    await dataStore.saveKit(newRecord);
-
-    res.status(201).json({ record: newRecord });
-  } catch (err) {
-    console.error("[generate error]", err);
-    res.status(500).json({ error: (err as Error).message });
-  }
-});
-
 // SSE Streaming generation endpoint for real-time progress in UI
+// Note: Must be registered before /api/kits/:id to prevent wildcard shadowing
 app.get("/api/kits/generate-stream", requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   const userId = req.user!.id;
   const jd = String(req.query.jd || "");
@@ -210,6 +147,70 @@ app.get("/api/kits/generate-stream", requireAuth, async (req: AuthenticatedReque
     sendEvent("error", { message: (err as Error).message });
     res.end();
   }
+});
+
+// Generate new kit with standard POST
+app.post("/api/kits/generate", requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+  const userId = req.user!.id;
+  const { jd, company_url, days } = req.body;
+
+  if (!jd || typeof jd !== "string" || !jd.trim()) {
+    res.status(400).json({ error: "Job description is required" });
+    return;
+  }
+  if (!company_url || typeof company_url !== "string" || !company_url.trim()) {
+    res.status(400).json({ error: "Company URL is required" });
+    return;
+  }
+
+  const daysInt = parseInt(days, 10) || 5;
+
+  try {
+    const kit = await generateInterviewPrepKit({
+      jd,
+      company_url,
+      days: daysInt,
+    });
+
+    // Initialize item metadata (provenance: generated, is_pinned: false)
+    const meta: StoredKitRecord["meta"] = {};
+    kit.questions.forEach((q) => {
+      meta[q.id] = { provenance: "generated", is_pinned: false };
+    });
+    kit.flashcards.forEach((f) => {
+      meta[f.id] = { provenance: "generated", is_pinned: false };
+    });
+
+    const newRecord: StoredKitRecord = {
+      id: `kit_${crypto.randomUUID()}`,
+      userId,
+      kit,
+      meta,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    await dataStore.saveKit(newRecord);
+
+    res.status(201).json({ record: newRecord });
+  } catch (err) {
+    console.error("[generate error]", err);
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+// Get single kit
+app.get("/api/kits/:id", requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+  const userId = req.user!.id;
+  const kitId = String(req.params.id);
+  const record = await dataStore.findKitById(kitId);
+
+  if (!record || record.userId !== userId) {
+    res.status(404).json({ error: "Kit not found" });
+    return;
+  }
+
+  res.json({ record });
 });
 
 // Update kit (Builder changes: edits, reorder, additions, pinning)

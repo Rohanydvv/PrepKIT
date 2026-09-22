@@ -120,7 +120,8 @@ export class LLMClient {
     userPrompt: string,
     options: LLMRequestOptions
   ): Promise<string> {
-    const apiKey = process.env.GEMINI_API_KEY;
+    const rawKey = process.env.GEMINI_API_KEY || "";
+    const apiKey = rawKey.trim().replace(/^["']|["']$/g, "");
     if (!apiKey) {
       throw new Error("GEMINI_API_KEY is not set in environment.");
     }
