@@ -12,11 +12,11 @@ The goal is to turn an unstructured job opportunity into a practical, day-by-day
 
 ## Live Public Deployment URLs
 
-- **Public Frontend Application**: [https://97880ca917b211.lhr.life](https://97880ca917b211.lhr.life)
-- **Public Backend API**: [https://744a01e45f353a.lhr.life](https://744a01e45f353a.lhr.life)
-- **Backend Health Check**: [https://744a01e45f353a.lhr.life/api/health](https://744a01e45f353a.lhr.life/api/health)
+- **Public Frontend Application**: [https://prepkit-frontend.onrender.com](https://prepkit-frontend.onrender.com)
+- **Public Backend API**: [https://prepkit-backend-kt9o.onrender.com](https://prepkit-backend-kt9o.onrender.com)
+- **Backend Health Check**: [https://prepkit-backend-kt9o.onrender.com/api/health](https://prepkit-backend-kt9o.onrender.com/api/health)
 
-*Both the frontend and backend are publicly accessible over HTTPS with end-to-end user registration, company crawling, requirement extraction, and kit generation verified.*
+*Both the frontend and backend are publicly accessible over HTTPS with persistent data storage, end-to-end user registration, company crawling, requirement extraction, and kit generation verified.*
 
 ---
 

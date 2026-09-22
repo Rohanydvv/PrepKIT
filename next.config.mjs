@@ -1,10 +1,24 @@
 /** @type {import('next').NextConfig} */
 
-function getNormalizedBackendUrl() {
-  let raw = (process.env.BACKEND_API_URL || "").trim();
+const PROD_BACKEND_URL = "https://prepkit-backend-kt9o.onrender.com";
+const LOCAL_BACKEND_URL = "http://localhost:5000";
 
+function getNormalizedBackendUrl() {
+  let raw = (
+    process.env.BACKEND_API_URL ||
+    process.env.NEXT_PUBLIC_BACKEND_API_URL ||
+    process.env.NEXT_PUBLIC_API_URL ||
+    ""
+  ).trim();
+
+  // If not explicitly set via environment variables, determine sensible default
   if (!raw) {
-    return "http://localhost:5000";
+    const isCloudOrProd =
+      process.env.RENDER === "true" ||
+      process.env.VERCEL === "1" ||
+      process.env.NODE_ENV === "production";
+
+    return isCloudOrProd ? PROD_BACKEND_URL : LOCAL_BACKEND_URL;
   }
 
   // Remove any trailing slashes
