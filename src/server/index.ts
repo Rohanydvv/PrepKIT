@@ -2,7 +2,14 @@ import express, { Response } from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import crypto from "crypto";
-import { initDatabase, dataStore, StoredKitRecord, isUsingMongoDB } from "./db.js";
+import {
+  initDatabase,
+  dataStore,
+  StoredKitRecord,
+  isUsingMongoDB,
+  isPersistentDbRequired,
+  TARGET_DATABASE_NAME,
+} from "./db.js";
 import {
   requireAuth,
   registerUser,
@@ -43,15 +50,31 @@ const authRateLimiter = createRateLimiter({
 // ---------------------------------------------------------------------------
 app.get("/api/health", (_req, res) => {
   const isMongo = isUsingMongoDB();
+  const persistentRequired = isPersistentDbRequired();
+
+  const healthStatus = isMongo
+    ? "ok"
+    : persistentRequired
+    ? "degraded"
+    : "ok";
+
   res.json({
-    status: "ok",
+    status: healthStatus,
     timestamp: new Date().toISOString(),
     version: "1.0.0",
     database: {
       provider: isMongo ? "mongodb" : "embedded",
       connected: isMongo,
-      storage: isMongo ? "MongoDB Atlas (persistent)" : "Embedded Store (ephemeral on cloud)",
+      databaseName: isMongo
+        ? TARGET_DATABASE_NAME
+        : (persistentRequired ? `${TARGET_DATABASE_NAME} (disconnected)` : "embedded-json"),
+      storage: isMongo
+        ? "MongoDB Atlas (persistent)"
+        : persistentRequired
+        ? "Unavailable (persistent required, Atlas unreachable)"
+        : "Embedded Store (local development)",
       hasMongoUri: Boolean(process.env.MONGODB_URI),
+      persistentRequired,
     },
   });
 });
@@ -90,6 +113,13 @@ async function handleAuthRegister(req: express.Request, res: Response) {
       });
       return;
     }
+    if (msg.includes("Persistent database unavailable")) {
+      res.status(503).json({
+        error: "DATABASE_UNAVAILABLE",
+        message: msg,
+      });
+      return;
+    }
     res.status(400).json({ error: "REGISTRATION_FAILED", message: msg });
   }
 }
@@ -116,10 +146,18 @@ app.post("/api/auth/login", authRateLimiter, async (req, res) => {
     });
 
     res.json({ user, token });
-  } catch (err) {
+  } catch (err: any) {
+    const msg = (err as Error).message || "Invalid email or password.";
+    if (msg.includes("Persistent database unavailable")) {
+      res.status(503).json({
+        error: "DATABASE_UNAVAILABLE",
+        message: msg,
+      });
+      return;
+    }
     res.status(401).json({
       error: "INVALID_CREDENTIALS",
-      message: (err as Error).message || "Invalid email or password.",
+      message: msg,
     });
   }
 });
@@ -139,9 +177,15 @@ app.get("/api/auth/me", requireAuth, (req: AuthenticatedRequest, res: Response) 
 
 // List kits for current authenticated user
 app.get("/api/kits", requireAuth, async (req: AuthenticatedRequest, res: Response) => {
-  const userId = req.user!.id;
-  const userKits = await dataStore.findKitsByUserId(userId);
-  res.json({ kits: userKits });
+  try {
+    const userId = req.user!.id;
+    const userKits = await dataStore.findKitsByUserId(userId);
+    res.json({ kits: userKits });
+  } catch (err: any) {
+    const msg = (err as Error).message || "Failed to retrieve kits";
+    const status = msg.includes("Persistent database unavailable") ? 503 : 500;
+    res.status(status).json({ error: msg });
+  }
 });
 
 // SSE Streaming generation endpoint for real-time progress in UI
@@ -245,69 +289,89 @@ app.post("/api/kits/generate", requireAuth, async (req: AuthenticatedRequest, re
     await dataStore.saveKit(newRecord);
 
     res.status(201).json({ record: newRecord });
-  } catch (err) {
+  } catch (err: any) {
     console.error("[generate error]", err);
-    res.status(500).json({ error: (err as Error).message });
+    const msg = (err as Error).message || "Generation failed";
+    const status = msg.includes("Persistent database unavailable") ? 503 : 500;
+    res.status(status).json({ error: msg });
   }
 });
 
 // Get single kit
 app.get("/api/kits/:id", requireAuth, async (req: AuthenticatedRequest, res: Response) => {
-  const userId = req.user!.id;
-  const kitId = String(req.params.id);
-  const record = await dataStore.findKitById(kitId);
+  try {
+    const userId = req.user!.id;
+    const kitId = String(req.params.id);
+    const record = await dataStore.findKitById(kitId);
 
-  if (!record || record.userId !== userId) {
-    res.status(404).json({ error: "Kit not found" });
-    return;
+    if (!record || record.userId !== userId) {
+      res.status(404).json({ error: "Kit not found" });
+      return;
+    }
+
+    res.json({ record });
+  } catch (err: any) {
+    const msg = (err as Error).message || "Failed to load kit";
+    const status = msg.includes("Persistent database unavailable") ? 503 : 500;
+    res.status(status).json({ error: msg });
   }
-
-  res.json({ record });
 });
 
 // Update kit (Builder changes: edits, reorder, additions, pinning)
 app.put("/api/kits/:id", requireAuth, async (req: AuthenticatedRequest, res: Response) => {
-  const userId = req.user!.id;
-  const kitId = String(req.params.id);
-  const existing = await dataStore.findKitById(kitId);
+  try {
+    const userId = req.user!.id;
+    const kitId = String(req.params.id);
+    const existing = await dataStore.findKitById(kitId);
 
-  if (!existing || existing.userId !== userId) {
-    res.status(404).json({ error: "Kit not found" });
-    return;
+    if (!existing || existing.userId !== userId) {
+      res.status(404).json({ error: "Kit not found" });
+      return;
+    }
+
+    const { kit, meta } = req.body;
+
+    // Validate structural integrity of updated kit
+    const validation = validateInterviewKit(kit);
+    if (!validation.success || !validation.data) {
+      res.status(400).json({ error: "Validation failed", details: validation.errors });
+      return;
+    }
+
+    existing.kit = validation.data;
+    if (meta) {
+      existing.meta = meta;
+    }
+    existing.updatedAt = new Date().toISOString();
+
+    await dataStore.saveKit(existing);
+    res.json({ record: existing });
+  } catch (err: any) {
+    const msg = (err as Error).message || "Failed to update kit";
+    const status = msg.includes("Persistent database unavailable") ? 503 : 500;
+    res.status(status).json({ error: msg });
   }
-
-  const { kit, meta } = req.body;
-
-  // Validate structural integrity of updated kit
-  const validation = validateInterviewKit(kit);
-  if (!validation.success || !validation.data) {
-    res.status(400).json({ error: "Validation failed", details: validation.errors });
-    return;
-  }
-
-  existing.kit = validation.data;
-  if (meta) {
-    existing.meta = meta;
-  }
-  existing.updatedAt = new Date().toISOString();
-
-  await dataStore.saveKit(existing);
-  res.json({ record: existing });
 });
 
 // Delete kit
 app.delete("/api/kits/:id", requireAuth, async (req: AuthenticatedRequest, res: Response) => {
-  const userId = req.user!.id;
-  const kitId = String(req.params.id);
-  const existing = await dataStore.findKitById(kitId);
+  try {
+    const userId = req.user!.id;
+    const kitId = String(req.params.id);
+    const existing = await dataStore.findKitById(kitId);
 
-  if (!existing || existing.userId !== userId) {
-    res.status(404).json({ error: "Kit not found" });
-    return;
+    if (!existing || existing.userId !== userId) {
+      res.status(404).json({ error: "Kit not found" });
+      return;
+    }
+
+    await dataStore.deleteKit(kitId);
+    res.json({ message: "Kit deleted successfully" });
+  } catch (err: any) {
+    const msg = (err as Error).message || "Failed to delete kit";
+    const status = msg.includes("Persistent database unavailable") ? 503 : 500;
+    res.status(status).json({ error: msg });
   }
-
-  await dataStore.deleteKit(kitId);
-  res.json({ message: "Kit deleted successfully" });
 });
 
 // ---------------------------------------------------------------------------

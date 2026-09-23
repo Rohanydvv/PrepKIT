@@ -173,10 +173,66 @@ export const PracticeSessionModel =
 let mongooseConnectionPromise: Promise<typeof mongoose> | null = null;
 let reconnectTimer: NodeJS.Timeout | null = null;
 
+export const TARGET_DATABASE_NAME = "prepkit";
+
+/**
+ * Normalizes MongoDB connection URI to explicitly target the dedicated 'prepkit' database.
+ * Replaces empty database paths, trailing slashes, or default 'test' database with 'prepkit'.
+ */
+export function normalizeMongoUri(rawUri: string, targetDb: string = TARGET_DATABASE_NAME): string {
+  if (!rawUri || !rawUri.trim()) return rawUri;
+  const uri = rawUri.trim();
+
+  try {
+    const url = new URL(uri);
+    const existingDb = url.pathname.replace(/^\//, "");
+    if (!existingDb || existingDb.toLowerCase() === "test") {
+      url.pathname = `/${targetDb}`;
+    }
+    return url.toString();
+  } catch {
+    const match = uri.match(/^(mongodb(?:\+srv)?:\/\/[^/]+)(?:\/([^?]*))?(\?.*)?$/);
+    if (match) {
+      const base = match[1];
+      const existingDb = match[2] || "";
+      const query = match[3] || "";
+      if (!existingDb || existingDb.toLowerCase() === "test") {
+        return `${base}/${targetDb}${query}`;
+      }
+    }
+    return uri;
+  }
+}
+
+/**
+ * Checks whether persistent database storage is required for the current environment.
+ * Required whenever MONGODB_URI is provided, or in cloud/production environments.
+ */
+export function isPersistentDbRequired(): boolean {
+  return (
+    Boolean(process.env.MONGODB_URI && process.env.MONGODB_URI.trim()) ||
+    process.env.RENDER === "true" ||
+    process.env.VERCEL === "1" ||
+    process.env.NODE_ENV === "production"
+  );
+}
+
+/**
+ * Asserts that the persistent database is reachable.
+ * In production or whenever MONGODB_URI is configured, prevents silent fallback to ephemeral disk.
+ */
+function assertDbAvailable(): void {
+  if (isPersistentDbRequired() && !isUsingMongoDB()) {
+    throw new Error(
+      "Persistent database unavailable: Cannot access or save persistent data because MongoDB Atlas ('prepkit' database) is unreachable. Please verify MongoDB Atlas Network Access whitelist (allow 0.0.0.0/0 on Render) and MONGODB_URI."
+    );
+  }
+}
+
 // Attach connection lifecycle events once
 if (typeof mongoose.connection?.on === "function") {
   mongoose.connection.on("connected", () => {
-    console.log("[Database] MongoDB Atlas connection established successfully.");
+    console.log(`[Database] MongoDB Atlas connection established successfully (database: ${mongoose.connection.name || TARGET_DATABASE_NAME}).`);
   });
 
   mongoose.connection.on("disconnected", () => {
@@ -194,7 +250,7 @@ function scheduleReconnect() {
   reconnectTimer = setTimeout(async () => {
     reconnectTimer = null;
     if (mongoose.connection.readyState !== 1) {
-      console.log("[Database] Attempting background reconnection to MongoDB Atlas...");
+      console.log("[Database] Attempting background reconnection to MongoDB Atlas ('prepkit' database)...");
       try {
         await initDatabase();
       } catch {
@@ -206,28 +262,35 @@ function scheduleReconnect() {
 }
 
 export async function initDatabase(): Promise<void> {
-  const mongoUri = process.env.MONGODB_URI;
+  const rawUri = process.env.MONGODB_URI;
 
-  if (!mongoUri || !mongoUri.trim()) {
-    console.log("[Database] No MONGODB_URI provided. Using zero-config embedded datastore (data/db.json).");
+  if (!rawUri || !rawUri.trim()) {
+    if (isPersistentDbRequired()) {
+      console.error("[Database] CRITICAL: Persistent database is required in this environment, but MONGODB_URI is not set!");
+    } else {
+      console.log("[Database] No MONGODB_URI provided. Using zero-config embedded datastore (data/db.json) for local development.");
+    }
     return;
   }
 
-  // Reuse existing connection if alive
+  // Reuse existing connection if alive and connected to target database
   if (mongoose.connection.readyState === 1) {
     return;
   }
 
+  const normalizedUri = normalizeMongoUri(rawUri, TARGET_DATABASE_NAME);
+
   if (!mongooseConnectionPromise || mongoose.connection.readyState === 0) {
-    console.log("[Database] Connecting to MongoDB Atlas...");
-    mongooseConnectionPromise = mongoose.connect(mongoUri, {
+    console.log(`[Database] Connecting to MongoDB Atlas (target database: ${TARGET_DATABASE_NAME})...`);
+    mongooseConnectionPromise = mongoose.connect(normalizedUri, {
+      dbName: TARGET_DATABASE_NAME,
       serverSelectionTimeoutMS: 5000,
     });
   }
 
   try {
     await mongooseConnectionPromise;
-    console.log("[Database] Connected to MongoDB Atlas successfully.");
+    console.log(`[Database] Connected to MongoDB Atlas successfully (database: ${mongoose.connection.name}).`);
 
     // Seed initial demo data from db.json if database is currently empty
     await seedFromLocalIfEmpty();
@@ -244,17 +307,24 @@ export function isUsingMongoDB(): boolean {
   return mongoose.connection.readyState === 1;
 }
 
+let lastConnectAttempt = 0;
 export async function ensureDbConnected(): Promise<boolean> {
   if (isUsingMongoDB()) return true;
-  if (process.env.MONGODB_URI && process.env.MONGODB_URI.trim()) {
-    try {
-      await initDatabase();
-      return isUsingMongoDB();
-    } catch {
-      return false;
-    }
+  if (!process.env.MONGODB_URI || !process.env.MONGODB_URI.trim()) return false;
+
+  const now = Date.now();
+  // Throttle connection attempts to once every 5 seconds to avoid cascading timeouts
+  if (now - lastConnectAttempt < 5000) {
+    return false;
   }
-  return false;
+  lastConnectAttempt = now;
+
+  try {
+    await initDatabase();
+    return isUsingMongoDB();
+  } catch {
+    return false;
+  }
 }
 
 async function seedFromLocalIfEmpty(): Promise<void> {
@@ -263,11 +333,11 @@ async function seedFromLocalIfEmpty(): Promise<void> {
     if (userCount === 0) {
       const local = embeddedStore.getData();
       if (local.users && local.users.length > 0) {
-        console.log(`[Database] Seeding ${local.users.length} initial user(s) to MongoDB Atlas...`);
+        console.log(`[Database] Seeding ${local.users.length} initial user(s) to MongoDB Atlas ('prepkit')...`);
         await UserModel.insertMany(local.users);
       }
       if (local.kits && local.kits.length > 0) {
-        console.log(`[Database] Seeding ${local.kits.length} initial kit(s) to MongoDB Atlas...`);
+        console.log(`[Database] Seeding ${local.kits.length} initial kit(s) to MongoDB Atlas ('prepkit')...`);
         await KitModel.insertMany(local.kits);
       }
       if (local.practiceSessions && local.practiceSessions.length > 0) {
@@ -281,7 +351,7 @@ async function seedFromLocalIfEmpty(): Promise<void> {
 
 // ---------------------------------------------------------------------------
 // Unified Async DataStore
-// Routes to MongoDB Atlas in Production; falls back to EmbeddedStore locally.
+// Strictly routes to MongoDB Atlas in Production; falls back to EmbeddedStore ONLY in local dev.
 // ---------------------------------------------------------------------------
 export const dataStore = {
   async findUserByEmail(email: string): Promise<UserRecord | undefined> {
@@ -296,6 +366,7 @@ export const dataStore = {
         createdAt: doc.createdAt,
       };
     }
+    assertDbAvailable();
     return embeddedStore.findUserByEmail(email);
   },
 
@@ -311,6 +382,7 @@ export const dataStore = {
         createdAt: doc.createdAt,
       };
     }
+    assertDbAvailable();
     return embeddedStore.findUserById(id);
   },
 
@@ -320,18 +392,7 @@ export const dataStore = {
       await UserModel.create(user);
       return user;
     }
-
-    const isCloudOrProd =
-      process.env.RENDER === "true" ||
-      process.env.VERCEL === "1" ||
-      process.env.NODE_ENV === "production";
-
-    if (isCloudOrProd && process.env.MONGODB_URI) {
-      throw new Error(
-        "Persistent database unavailable: Cannot save user account because MongoDB Atlas is unreachable. Please verify that your MongoDB Atlas Network Access whitelist allows 0.0.0.0/0."
-      );
-    }
-
+    assertDbAvailable();
     return embeddedStore.createUser(user);
   },
 
@@ -348,6 +409,7 @@ export const dataStore = {
         updatedAt: d.updatedAt,
       }));
     }
+    assertDbAvailable();
     return embeddedStore.findKitsByUserId(userId);
   },
 
@@ -365,6 +427,7 @@ export const dataStore = {
         updatedAt: doc.updatedAt,
       };
     }
+    assertDbAvailable();
     return embeddedStore.findKitById(id);
   },
 
@@ -377,6 +440,7 @@ export const dataStore = {
       });
       return record;
     }
+    assertDbAvailable();
     return embeddedStore.saveKit(record);
   },
 
@@ -386,6 +450,7 @@ export const dataStore = {
       const res = await KitModel.deleteOne({ id });
       return res.deletedCount > 0;
     }
+    assertDbAvailable();
     return embeddedStore.deleteKit(id);
   },
 
@@ -402,6 +467,7 @@ export const dataStore = {
         updatedAt: doc.updatedAt,
       };
     }
+    assertDbAvailable();
     return embeddedStore.findPracticeSession(userId, kitId);
   },
 
@@ -414,6 +480,7 @@ export const dataStore = {
       });
       return record;
     }
+    assertDbAvailable();
     return embeddedStore.savePracticeSession(record);
   },
 };
