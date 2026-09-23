@@ -15,14 +15,34 @@ export async function fetchJson<T>(url: string, options: RequestInit = {}): Prom
   });
 
   if (!res.ok) {
-    let errMessage = `HTTP error ${res.status}`;
+    let errMessage = "";
     try {
       const data = await res.json();
-      if (data.error) errMessage = data.error;
-      if (data.message) errMessage = data.message;
+      if (data.message && typeof data.message === "string") {
+        errMessage = data.message;
+      } else if (data.error && typeof data.error === "string") {
+        errMessage = data.error;
+      }
     } catch {
-      // ignore
+      // Body was not JSON (e.g. proxy HTML response for 429, 502, 504)
     }
+
+    if (!errMessage) {
+      if (res.status === 429) {
+        errMessage = "Too many attempts. Please wait a moment and try again.";
+      } else if (res.status === 502 || res.status === 503 || res.status === 504) {
+        errMessage = "Backend server is waking up or temporarily unavailable. Please try again in a moment.";
+      } else if (res.status === 401) {
+        errMessage = "Invalid email or password.";
+      } else if (res.status === 404) {
+        errMessage = "Requested resource not found.";
+      } else if (res.status === 409) {
+        errMessage = "An account with this email already exists. Please sign in instead.";
+      } else {
+        errMessage = `HTTP error ${res.status}`;
+      }
+    }
+
     throw new Error(errMessage);
   }
 
@@ -46,6 +66,12 @@ export const api = {
         body: JSON.stringify({ email, password: passwordPlain }),
       });
     },
+    async signup(email: string, passwordPlain: string) {
+      return fetchJson<{ user: { id: string; email: string }; token: string }>("/api/auth/signup", {
+        method: "POST",
+        body: JSON.stringify({ email, password: passwordPlain }),
+      });
+    },
     async logout() {
       return fetchJson<{ message: string }>("/api/auth/logout", {
         method: "POST",
@@ -56,7 +82,7 @@ export const api = {
       try {
         return await this.login("demo@prepkit.io", "prepkitdemo2026");
       } catch {
-        return await this.register("demo@prepkit.io", "prepkitdemo2026");
+        return await this.signup("demo@prepkit.io", "prepkitdemo2026");
       }
     },
   },

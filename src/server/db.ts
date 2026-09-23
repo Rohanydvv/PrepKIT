@@ -171,24 +171,54 @@ export const PracticeSessionModel =
 // Connection Lifecycle & Reuse
 // ---------------------------------------------------------------------------
 let mongooseConnectionPromise: Promise<typeof mongoose> | null = null;
-let isMongoConnected = false;
+let reconnectTimer: NodeJS.Timeout | null = null;
+
+// Attach connection lifecycle events once
+if (typeof mongoose.connection?.on === "function") {
+  mongoose.connection.on("connected", () => {
+    console.log("[Database] MongoDB Atlas connection established successfully.");
+  });
+
+  mongoose.connection.on("disconnected", () => {
+    console.warn("[Database] MongoDB Atlas connection lost.");
+    scheduleReconnect();
+  });
+
+  mongoose.connection.on("error", (err) => {
+    console.error(`[Database] MongoDB Atlas connection error: ${err.message}`);
+  });
+}
+
+function scheduleReconnect() {
+  if (reconnectTimer || !process.env.MONGODB_URI) return;
+  reconnectTimer = setTimeout(async () => {
+    reconnectTimer = null;
+    if (mongoose.connection.readyState !== 1) {
+      console.log("[Database] Attempting background reconnection to MongoDB Atlas...");
+      try {
+        await initDatabase();
+      } catch {
+        // Will be rescheduled if disconnected
+      }
+    }
+  }, 10000);
+  reconnectTimer.unref();
+}
 
 export async function initDatabase(): Promise<void> {
   const mongoUri = process.env.MONGODB_URI;
 
   if (!mongoUri || !mongoUri.trim()) {
     console.log("[Database] No MONGODB_URI provided. Using zero-config embedded datastore (data/db.json).");
-    isMongoConnected = false;
     return;
   }
 
   // Reuse existing connection if alive
   if (mongoose.connection.readyState === 1) {
-    isMongoConnected = true;
     return;
   }
 
-  if (!mongooseConnectionPromise) {
+  if (!mongooseConnectionPromise || mongoose.connection.readyState === 0) {
     console.log("[Database] Connecting to MongoDB Atlas...");
     mongooseConnectionPromise = mongoose.connect(mongoUri, {
       serverSelectionTimeoutMS: 5000,
@@ -197,22 +227,34 @@ export async function initDatabase(): Promise<void> {
 
   try {
     await mongooseConnectionPromise;
-    isMongoConnected = true;
     console.log("[Database] Connected to MongoDB Atlas successfully.");
 
     // Seed initial demo data from db.json if database is currently empty
     await seedFromLocalIfEmpty();
   } catch (err) {
     console.warn(
-      `[Database] MongoDB Atlas connection failed (${(err as Error).message}). Falling back smoothly to embedded datastore.`
+      `[Database] MongoDB Atlas connection attempt failed (${(err as Error).message}).`
     );
-    isMongoConnected = false;
     mongooseConnectionPromise = null;
+    scheduleReconnect();
   }
 }
 
 export function isUsingMongoDB(): boolean {
-  return isMongoConnected && mongoose.connection.readyState === 1;
+  return mongoose.connection.readyState === 1;
+}
+
+export async function ensureDbConnected(): Promise<boolean> {
+  if (isUsingMongoDB()) return true;
+  if (process.env.MONGODB_URI && process.env.MONGODB_URI.trim()) {
+    try {
+      await initDatabase();
+      return isUsingMongoDB();
+    } catch {
+      return false;
+    }
+  }
+  return false;
 }
 
 async function seedFromLocalIfEmpty(): Promise<void> {
@@ -243,6 +285,7 @@ async function seedFromLocalIfEmpty(): Promise<void> {
 // ---------------------------------------------------------------------------
 export const dataStore = {
   async findUserByEmail(email: string): Promise<UserRecord | undefined> {
+    await ensureDbConnected();
     if (isUsingMongoDB()) {
       const doc = await UserModel.findOne({ email: email.toLowerCase().trim() }).lean();
       if (!doc) return undefined;
@@ -257,6 +300,7 @@ export const dataStore = {
   },
 
   async findUserById(id: string): Promise<UserRecord | undefined> {
+    await ensureDbConnected();
     if (isUsingMongoDB()) {
       const doc = await UserModel.findOne({ id }).lean();
       if (!doc) return undefined;
@@ -271,14 +315,28 @@ export const dataStore = {
   },
 
   async createUser(user: UserRecord): Promise<UserRecord> {
+    await ensureDbConnected();
     if (isUsingMongoDB()) {
       await UserModel.create(user);
       return user;
     }
+
+    const isCloudOrProd =
+      process.env.RENDER === "true" ||
+      process.env.VERCEL === "1" ||
+      process.env.NODE_ENV === "production";
+
+    if (isCloudOrProd && process.env.MONGODB_URI) {
+      throw new Error(
+        "Persistent database unavailable: Cannot save user account because MongoDB Atlas is unreachable. Please verify that your MongoDB Atlas Network Access whitelist allows 0.0.0.0/0."
+      );
+    }
+
     return embeddedStore.createUser(user);
   },
 
   async findKitsByUserId(userId: string): Promise<StoredKitRecord[]> {
+    await ensureDbConnected();
     if (isUsingMongoDB()) {
       const docs = await KitModel.find({ userId }).sort({ updatedAt: -1 }).lean();
       return docs.map((d) => ({
@@ -294,6 +352,7 @@ export const dataStore = {
   },
 
   async findKitById(id: string): Promise<StoredKitRecord | undefined> {
+    await ensureDbConnected();
     if (isUsingMongoDB()) {
       const doc = await KitModel.findOne({ id }).lean();
       if (!doc) return undefined;
@@ -310,6 +369,7 @@ export const dataStore = {
   },
 
   async saveKit(record: StoredKitRecord): Promise<StoredKitRecord> {
+    await ensureDbConnected();
     if (isUsingMongoDB()) {
       await KitModel.findOneAndUpdate({ id: record.id }, record, {
         upsert: true,
@@ -321,6 +381,7 @@ export const dataStore = {
   },
 
   async deleteKit(id: string): Promise<boolean> {
+    await ensureDbConnected();
     if (isUsingMongoDB()) {
       const res = await KitModel.deleteOne({ id });
       return res.deletedCount > 0;
@@ -329,6 +390,7 @@ export const dataStore = {
   },
 
   async findPracticeSession(userId: string, kitId: string): Promise<PracticeSessionRecord | undefined> {
+    await ensureDbConnected();
     if (isUsingMongoDB()) {
       const doc = await PracticeSessionModel.findOne({ userId, kitId }).lean();
       if (!doc) return undefined;
@@ -344,6 +406,7 @@ export const dataStore = {
   },
 
   async savePracticeSession(record: PracticeSessionRecord): Promise<PracticeSessionRecord> {
+    await ensureDbConnected();
     if (isUsingMongoDB()) {
       await PracticeSessionModel.findOneAndUpdate({ id: record.id }, record, {
         upsert: true,

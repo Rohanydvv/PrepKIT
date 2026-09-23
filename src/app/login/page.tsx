@@ -16,13 +16,25 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    const cleanEmail = email.trim();
+    if (!cleanEmail) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters.");
+      return;
+    }
+
     setLoading(true);
 
     try {
       if (isRegister) {
-        await api.auth.register(email, password);
+        await api.auth.signup(cleanEmail, password);
       } else {
-        await api.auth.login(email, password);
+        await api.auth.login(cleanEmail, password);
       }
       router.push("/");
     } catch (err) {
@@ -114,8 +126,20 @@ export default function LoginPage() {
           </div>
 
           {error && (
-            <div className="mb-5 p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium">
-              {error}
+            <div className="mb-5 p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium flex items-center justify-between">
+              <span>{error}</span>
+              {isRegister && error.toLowerCase().includes("already exists") && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsRegister(false);
+                    setError(null);
+                  }}
+                  className="ml-2 font-semibold text-brand-700 hover:text-brand-900 underline whitespace-nowrap"
+                >
+                  Sign In
+                </button>
+              )}
             </div>
           )}
 

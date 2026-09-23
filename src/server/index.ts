@@ -2,13 +2,14 @@ import express, { Response } from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import crypto from "crypto";
-import { initDatabase, dataStore, StoredKitRecord } from "./db.js";
+import { initDatabase, dataStore, StoredKitRecord, isUsingMongoDB } from "./db.js";
 import {
   requireAuth,
   registerUser,
   loginUser,
   AuthenticatedRequest,
 } from "./auth.js";
+import { createRateLimiter } from "./rateLimiter.js";
 import { generateInterviewPrepKit } from "../core/pipeline.js";
 import { generateCompanyBrief } from "../core/generation/briefGenerator.js";
 import { generateInitialQuestionBank } from "../core/generation/questionGenerator.js";
@@ -22,23 +23,54 @@ import { Question } from "../core/types.js";
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Trust reverse proxy (Render, Vercel, Cloudflare) for accurate client IP identification
+app.set("trust proxy", 1);
+
 app.use(cors({ origin: true, credentials: true }));
 app.use(cookieParser());
 app.use(express.json({ limit: "5mb" }));
+
+// Rate limiter for authentication routes (login, signup, register)
+// 30 requests per 15 minutes per client IP
+const authRateLimiter = createRateLimiter({
+  maxRequests: 30,
+  windowMs: 15 * 60 * 1000,
+  message: "Too many authentication attempts. Please wait a few moments and try again.",
+});
 
 // ---------------------------------------------------------------------------
 // Health & Diagnostic Endpoint
 // ---------------------------------------------------------------------------
 app.get("/api/health", (_req, res) => {
-  res.json({ status: "ok", timestamp: new Date().toISOString(), version: "1.0.0" });
+  const isMongo = isUsingMongoDB();
+  res.json({
+    status: "ok",
+    timestamp: new Date().toISOString(),
+    version: "1.0.0",
+    database: {
+      provider: isMongo ? "mongodb" : "embedded",
+      connected: isMongo,
+      storage: isMongo ? "MongoDB Atlas (persistent)" : "Embedded Store (ephemeral on cloud)",
+      hasMongoUri: Boolean(process.env.MONGODB_URI),
+    },
+  });
 });
 
 // ---------------------------------------------------------------------------
 // Authentication Endpoints (Section 1)
 // ---------------------------------------------------------------------------
-app.post("/api/auth/register", async (req, res) => {
+async function handleAuthRegister(req: express.Request, res: Response) {
   try {
     const { email, password } = req.body;
+    if (!email || typeof email !== "string" || !email.trim()) {
+      res.status(400).json({ error: "VALIDATION_ERROR", message: "Email is required." });
+      return;
+    }
+    if (!password || typeof password !== "string" || password.length < 6) {
+      res.status(400).json({ error: "VALIDATION_ERROR", message: "Password must be at least 6 characters." });
+      return;
+    }
+
     const { user, token } = await registerUser(email, password);
 
     res.cookie("token", token, {
@@ -49,14 +81,31 @@ app.post("/api/auth/register", async (req, res) => {
     });
 
     res.status(201).json({ user, token });
-  } catch (err) {
-    res.status(400).json({ error: (err as Error).message });
+  } catch (err: any) {
+    const msg = (err as Error).message || "Registration failed.";
+    if (msg.includes("already exists")) {
+      res.status(409).json({
+        error: "EMAIL_EXISTS",
+        message: "An account with this email already exists. Please sign in instead.",
+      });
+      return;
+    }
+    res.status(400).json({ error: "REGISTRATION_FAILED", message: msg });
   }
-});
+}
 
-app.post("/api/auth/login", async (req, res) => {
+// Support both /api/auth/register and /api/auth/signup identically
+app.post("/api/auth/register", authRateLimiter, handleAuthRegister);
+app.post("/api/auth/signup", authRateLimiter, handleAuthRegister);
+
+app.post("/api/auth/login", authRateLimiter, async (req, res) => {
   try {
     const { email, password } = req.body;
+    if (!email || !password) {
+      res.status(400).json({ error: "VALIDATION_ERROR", message: "Email and password are required." });
+      return;
+    }
+
     const { user, token } = await loginUser(email, password);
 
     res.cookie("token", token, {
@@ -68,7 +117,10 @@ app.post("/api/auth/login", async (req, res) => {
 
     res.json({ user, token });
   } catch (err) {
-    res.status(401).json({ error: (err as Error).message });
+    res.status(401).json({
+      error: "INVALID_CREDENTIALS",
+      message: (err as Error).message || "Invalid email or password.",
+    });
   }
 });
 
