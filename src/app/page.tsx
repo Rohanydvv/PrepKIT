@@ -36,8 +36,10 @@ export default function DashboardPage() {
     try {
       const res = await api.kits.list();
       setKits(res.kits);
-    } catch {
-      router.push("/login");
+    } catch (err: any) {
+      if (err?.status === 401) {
+        router.push("/login");
+      }
     } finally {
       setLoading(false);
     }

@@ -2,36 +2,126 @@ import { InterviewKit, StoredKitRecord } from "@/core/types";
 
 const API_BASE = "";
 
-export async function fetchJson<T>(url: string, options: RequestInit = {}): Promise<T> {
+export class ApiError extends Error {
+  status: number;
+  data?: any;
+  isTransient: boolean;
+
+  constructor(message: string, status: number, data?: any) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.data = data;
+    // Transient errors indicating server sleep, boot/cold-start, proxy buffering, or temporary timeout
+    this.isTransient = status === 0 || status === 408 || status === 502 || status === 503 || status === 504;
+  }
+}
+
+/**
+ * Determines whether an error is transient and should trigger bounded automatic retry.
+ * Returns true for network failures, 502, 503, 504, 408.
+ * Returns false for 400, 401, 403, 404, 409, 429, and application validation errors.
+ */
+export function isTransientError(err: unknown): boolean {
+  if (!err) return false;
+
+  if (err instanceof ApiError) {
+    return err.isTransient;
+  }
+
+  const anyErr = err as { status?: number; message?: string };
+  if (
+    anyErr.status === 0 ||
+    anyErr.status === 408 ||
+    anyErr.status === 502 ||
+    anyErr.status === 503 ||
+    anyErr.status === 504
+  ) {
+    return true;
+  }
+
+  const msg = (anyErr.message || "").toLowerCase();
+  if (
+    msg.includes("failed to fetch") ||
+    msg.includes("network") ||
+    msg.includes("connection") ||
+    msg.includes("load failed") ||
+    msg.includes("refused") ||
+    msg.includes("econnrefused") ||
+    msg.includes("econnreset") ||
+    msg.includes("etimedout") ||
+    msg.includes("timeout") ||
+    msg.includes("waking up") ||
+    msg.includes("temporarily unavailable") ||
+    msg.includes("couldn't connect")
+  ) {
+    // Exclude explicit client errors (400, 401, 403, 404, 409, 422, 429)
+    if (anyErr.status && anyErr.status >= 400 && anyErr.status < 500 && anyErr.status !== 408) {
+      return false;
+    }
+    return true;
+  }
+
+  return false;
+}
+
+export interface RetryState {
+  attempt: number;
+  maxAttempts: number;
+  delayMs: number;
+  isRetrying: boolean;
+  message: string;
+}
+
+export interface FetchJsonOptions extends RequestInit {
+  retry?: boolean;
+  maxRetries?: number;
+  retryDelays?: number[];
+  onRetry?: (state: RetryState) => void;
+}
+
+// Default bounded exponential backoff: ~2s, ~4s, ~8s, ~12s (total ~26s, matching Render wake cycle)
+export const DEFAULT_RETRY_DELAYS = [2000, 4000, 8000, 12000];
+
+async function rawFetchJson<T>(url: string, init: RequestInit = {}): Promise<T> {
   const headers = {
     "Content-Type": "application/json",
-    ...(options.headers || {}),
+    ...(init.headers || {}),
   };
 
-  const res = await fetch(`${API_BASE}${url}`, {
-    ...options,
-    headers,
-    credentials: "include",
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}${url}`, {
+      ...init,
+      headers,
+      credentials: "include",
+    });
+  } catch (netErr: any) {
+    throw new ApiError(
+      netErr?.message || "Failed to connect to server",
+      0
+    );
+  }
 
   if (!res.ok) {
     let errMessage = "";
+    let data: any = null;
     try {
-      const data = await res.json();
+      data = await res.json();
       if (data.message && typeof data.message === "string") {
         errMessage = data.message;
       } else if (data.error && typeof data.error === "string") {
         errMessage = data.error;
       }
     } catch {
-      // Body was not JSON (e.g. proxy HTML response for 429, 502, 504)
+      // Body was not JSON (e.g. proxy HTML response for 429, 502, 503, 504)
     }
 
     if (!errMessage) {
       if (res.status === 429) {
         errMessage = "Too many attempts. Please wait a moment and try again.";
       } else if (res.status === 502 || res.status === 503 || res.status === 504) {
-        errMessage = "Backend server is waking up or temporarily unavailable. Please try again in a moment.";
+        errMessage = "We couldn't connect to the PrepKIT server. Please try again in a moment.";
       } else if (res.status === 401) {
         errMessage = "Invalid email or password.";
       } else if (res.status === 404) {
@@ -43,56 +133,145 @@ export async function fetchJson<T>(url: string, options: RequestInit = {}): Prom
       }
     }
 
-    throw new Error(errMessage);
+    throw new ApiError(errMessage, res.status, data);
   }
 
   return await res.json();
 }
 
+export async function fetchJson<T>(url: string, options: FetchJsonOptions = {}): Promise<T> {
+  const {
+    retry = false,
+    maxRetries = DEFAULT_RETRY_DELAYS.length,
+    retryDelays = DEFAULT_RETRY_DELAYS,
+    onRetry,
+    ...fetchInit
+  } = options;
+
+  if (!retry) {
+    return await rawFetchJson<T>(url, fetchInit);
+  }
+
+  let attempt = 0;
+
+  while (true) {
+    try {
+      const result = await rawFetchJson<T>(url, fetchInit);
+      if (attempt > 0 && onRetry) {
+        onRetry({
+          attempt: 0,
+          maxAttempts: maxRetries,
+          delayMs: 0,
+          isRetrying: false,
+          message: "",
+        });
+      }
+      return result;
+    } catch (err: any) {
+      if (attempt < maxRetries && isTransientError(err)) {
+        attempt++;
+        const delayMs = retryDelays[attempt - 1] ?? 10000;
+
+        if (onRetry) {
+          onRetry({
+            attempt,
+            maxAttempts: maxRetries,
+            delayMs,
+            isRetrying: true,
+            message: "Connecting to PrepKIT...\nThe server is starting up. This may take a few moments.",
+          });
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+        continue;
+      }
+
+      if (attempt > 0 && onRetry) {
+        onRetry({
+          attempt: 0,
+          maxAttempts: maxRetries,
+          delayMs: 0,
+          isRetrying: false,
+          message: "",
+        });
+      }
+
+      if (attempt >= maxRetries && isTransientError(err)) {
+        throw new ApiError(
+          "We couldn't connect to the PrepKIT server. Please try again in a moment.",
+          err.status || 503,
+          err.data
+        );
+      }
+
+      throw err;
+    }
+  }
+}
+
 export const api = {
   auth: {
-    async me() {
-      return fetchJson<{ user: { id: string; email: string } }>("/api/auth/me");
+    async me(options?: FetchJsonOptions) {
+      return fetchJson<{ user: { id: string; email: string } }>("/api/auth/me", {
+        retry: true,
+        ...options,
+      });
     },
-    async login(email: string, passwordPlain: string) {
+    async login(email: string, passwordPlain: string, options?: FetchJsonOptions) {
       return fetchJson<{ user: { id: string; email: string }; token: string }>("/api/auth/login", {
         method: "POST",
         body: JSON.stringify({ email, password: passwordPlain }),
+        retry: true,
+        ...options,
       });
     },
-    async register(email: string, passwordPlain: string) {
+    async register(email: string, passwordPlain: string, options?: FetchJsonOptions) {
       return fetchJson<{ user: { id: string; email: string }; token: string }>("/api/auth/register", {
         method: "POST",
         body: JSON.stringify({ email, password: passwordPlain }),
+        retry: true,
+        ...options,
       });
     },
-    async signup(email: string, passwordPlain: string) {
+    async signup(email: string, passwordPlain: string, options?: FetchJsonOptions) {
       return fetchJson<{ user: { id: string; email: string }; token: string }>("/api/auth/signup", {
         method: "POST",
         body: JSON.stringify({ email, password: passwordPlain }),
+        retry: true,
+        ...options,
       });
     },
-    async logout() {
+    async logout(options?: FetchJsonOptions) {
       return fetchJson<{ message: string }>("/api/auth/logout", {
         method: "POST",
+        ...options,
       });
     },
-    async demoLogin() {
-      // Helper for instant demo access
+    async demoLogin(options?: FetchJsonOptions) {
       try {
-        return await this.login("demo@prepkit.io", "prepkitdemo2026");
-      } catch {
-        return await this.signup("demo@prepkit.io", "prepkitdemo2026");
+        return await this.login("demo@prepkit.io", "prepkitdemo2026", options);
+      } catch (err: any) {
+        // Only attempt signup if the demo user does not exist (401); do not signup on network/server errors
+        if (!isTransientError(err)) {
+          return await this.signup("demo@prepkit.io", "prepkitdemo2026", options);
+        }
+        throw err;
       }
     },
   },
 
   kits: {
-    async list() {
-      return fetchJson<{ kits: StoredKitRecord[] }>("/api/kits");
+    async list(options?: FetchJsonOptions) {
+      return fetchJson<{ kits: StoredKitRecord[] }>("/api/kits", {
+        retry: true,
+        ...options,
+      });
     },
-    async get(id: string) {
-      return fetchJson<{ record: StoredKitRecord }>(`/api/kits/${id}`);
+    async get(id: string, options?: FetchJsonOptions) {
+      return fetchJson<{ record: StoredKitRecord }>(`/api/kits/${id}`, {
+        retry: true,
+        ...options,
+      });
     },
     async generate(jd: string, company_url: string, days: number) {
       return fetchJson<{ record: StoredKitRecord }>("/api/kits/generate", {
