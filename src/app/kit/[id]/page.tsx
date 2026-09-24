@@ -55,6 +55,10 @@ export default function KitBuilderPage() {
         setRecord(res.record);
       })
       .catch((err) => {
+        if (err?.status === 401) {
+          router.push("/login");
+          return;
+        }
         alert("Failed to load kit: " + (err as Error).message);
         router.push("/");
       })

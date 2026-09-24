@@ -128,7 +128,11 @@ export default function GenerateKitPage() {
             const res = await api.kits.generate(jd, companyUrl, days);
             router.push(`/kit/${res.record.id}`);
             return;
-          } catch (postErr) {
+          } catch (postErr: any) {
+            if (postErr?.status === 401) {
+              router.push("/login");
+              return;
+            }
             setError((postErr as Error).message);
             setIsGenerating(false);
             return;
@@ -150,7 +154,11 @@ export default function GenerateKitPage() {
       try {
         const res = await api.kits.generate(jd, companyUrl, days);
         router.push(`/kit/${res.record.id}`);
-      } catch (err) {
+      } catch (err: any) {
+        if (err?.status === 401) {
+          router.push("/login");
+          return;
+        }
         setError((err as Error).message);
         setIsGenerating(false);
       }

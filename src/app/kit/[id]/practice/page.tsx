@@ -46,7 +46,11 @@ export default function PracticeModePage() {
       setCurrentIndex(0);
       setIsFlipped(false);
       setSessionCompleted(false);
-    } catch (err) {
+    } catch (err: any) {
+      if (err?.status === 401) {
+        router.push("/login");
+        return;
+      }
       alert("Failed to load flashcards: " + (err as Error).message);
       router.push(`/kit/${kitId}`);
     } finally {

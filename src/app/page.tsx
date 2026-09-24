@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
+import { AuthGuard } from "@/components/AuthGuard";
 import { StoredKitRecord } from "@/core/types";
 import { Navbar } from "@/components/Navbar";
 import {
@@ -23,8 +25,9 @@ import {
   Award,
 } from "lucide-react";
 
-export default function DashboardPage() {
+function DashboardView() {
   const router = useRouter();
+  const { logout } = useAuth();
   const [kits, setKits] = useState<StoredKitRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [showBatchModal, setShowBatchModal] = useState(false);
@@ -38,6 +41,7 @@ export default function DashboardPage() {
       setKits(res.kits);
     } catch (err: any) {
       if (err?.status === 401) {
+        await logout();
         router.push("/login");
       }
     } finally {
@@ -329,3 +333,12 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+export default function RootPage() {
+  return (
+    <AuthGuard>
+      <DashboardView />
+    </AuthGuard>
+  );
+}
+

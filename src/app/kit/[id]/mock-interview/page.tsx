@@ -54,6 +54,10 @@ export default function MockInterviewPage() {
         }
       })
       .catch((err) => {
+        if (err?.status === 401) {
+          router.push("/login");
+          return;
+        }
         alert("Failed to load mock interview: " + (err as Error).message);
         router.push(`/kit/${kitId}`);
       })

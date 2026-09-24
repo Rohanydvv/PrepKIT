@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { api, RetryState, FetchJsonOptions } from "@/lib/api";
+import { RetryState, FetchJsonOptions, hasStoredSession } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
 import {
   Sparkles,
   ArrowRight,
@@ -14,6 +15,7 @@ import {
 
 export default function LoginPage() {
   const router = useRouter();
+  const { isAuthenticated, loading: authLoading, login, signup, demoLogin } = useAuth();
   const [isRegister, setIsRegister] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -21,6 +23,13 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [retryState, setRetryState] = useState<RetryState | null>(null);
   const [lastAction, setLastAction] = useState<"submit" | "demo" | null>(null);
+
+  // Requirement 13 & Flow 8: If already authenticated, redirect to dashboard immediately
+  useEffect(() => {
+    if (!authLoading && isAuthenticated) {
+      router.replace("/");
+    }
+  }, [authLoading, isAuthenticated, router]);
 
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -51,9 +60,9 @@ export default function LoginPage() {
       };
 
       if (isRegister) {
-        await api.auth.signup(cleanEmail, password, opts);
+        await signup(cleanEmail, password, opts);
       } else {
-        await api.auth.login(cleanEmail, password, opts);
+        await login(cleanEmail, password, opts);
       }
       setRetryState(null);
       router.push("/");
@@ -74,7 +83,7 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      await api.auth.demoLogin({
+      await demoLogin({
         onRetry: (state) => {
           setRetryState(state.isRetrying ? state : null);
         },
@@ -96,6 +105,23 @@ export default function LoginPage() {
       error!.includes("waking up") ||
       error!.includes("Failed to connect") ||
       error!.includes("Network connection failed"));
+
+  // Prevent login form flicker if stored session is currently validating
+  if (authLoading && hasStoredSession()) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50">
+        <div className="flex flex-col items-center">
+          <div className="inline-flex h-12 w-12 rounded-2xl bg-gradient-to-tr from-brand-600 to-indigo-500 items-center justify-center text-white shadow-lg shadow-brand-500/25 mb-3">
+            <Sparkles className="h-6 w-6" />
+          </div>
+          <div className="flex items-center space-x-2 text-xs text-slate-500 font-medium mt-3">
+            <Loader2 className="h-4 w-4 text-brand-600 animate-spin" />
+            <span>Checking session...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-b from-slate-50 via-slate-100 to-indigo-50/30">

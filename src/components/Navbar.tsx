@@ -2,8 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { api } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
 import {
   Sparkles,
   BookOpen,
@@ -18,19 +17,11 @@ import {
 export function Navbar({ kitId }: { kitId?: string }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [userEmail, setUserEmail] = useState<string | null>(null);
-
-  useEffect(() => {
-    api.auth
-      .me()
-      .then((res) => setUserEmail(res.user.email))
-      .catch(() => setUserEmail(null));
-  }, []);
+  const { user, logout } = useAuth();
 
   const handleLogout = async () => {
     try {
-      await api.auth.logout();
-      setUserEmail(null);
+      await logout();
       router.push("/login");
     } catch {
       router.push("/login");
@@ -118,11 +109,11 @@ export function Navbar({ kitId }: { kitId?: string }) {
               <span className="hidden sm:inline">New Kit</span>
             </Link>
 
-            {userEmail ? (
+            {user?.email ? (
               <div className="flex items-center space-x-2 pl-2 border-l border-slate-200">
                 <div className="hidden sm:flex items-center space-x-1.5 text-xs text-slate-600 bg-slate-100 py-1 px-2.5 rounded-full">
                   <User className="h-3 w-3 text-slate-500" />
-                  <span className="max-w-[130px] truncate">{userEmail}</span>
+                  <span className="max-w-[130px] truncate">{user.email}</span>
                 </div>
                 <button
                   onClick={handleLogout}

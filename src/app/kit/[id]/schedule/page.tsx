@@ -35,6 +35,10 @@ export default function SchedulePage() {
       .get(kitId)
       .then((res) => setRecord(res.record))
       .catch((err) => {
+        if (err?.status === 401) {
+          router.push("/login");
+          return;
+        }
         alert("Failed to load schedule: " + (err as Error).message);
         router.push(`/kit/${kitId}`);
       })

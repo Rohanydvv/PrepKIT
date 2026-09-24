@@ -83,11 +83,76 @@ export interface FetchJsonOptions extends RequestInit {
 // Default bounded exponential backoff: ~2s, ~4s, ~8s, ~12s (total ~26s, matching Render wake cycle)
 export const DEFAULT_RETRY_DELAYS = [2000, 4000, 8000, 12000];
 
+export const TOKEN_STORAGE_KEY = "prepkit_token";
+export const USER_STORAGE_KEY = "prepkit_user";
+export const SESSION_ACTIVE_KEY = "prepkit_session_active";
+
+export function getStoredToken(): string | null {
+  if (typeof window === "undefined" || typeof localStorage === "undefined") return null;
+  try {
+    return localStorage.getItem(TOKEN_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function getStoredUser(): { id: string; email: string } | null {
+  if (typeof window === "undefined" || typeof localStorage === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(USER_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function hasStoredSession(): boolean {
+  if (typeof window === "undefined" || typeof localStorage === "undefined") return false;
+  try {
+    return Boolean(
+      localStorage.getItem(TOKEN_STORAGE_KEY) ||
+      localStorage.getItem(SESSION_ACTIVE_KEY)
+    );
+  } catch {
+    return false;
+  }
+}
+
+export function setStoredSession(token: string, user: { id: string; email: string }) {
+  if (typeof window === "undefined" || typeof localStorage === "undefined") return;
+  try {
+    if (token) localStorage.setItem(TOKEN_STORAGE_KEY, token);
+    if (user) localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
+    localStorage.setItem(SESSION_ACTIVE_KEY, "true");
+  } catch {
+    // Ignore quota or security restrictions
+  }
+}
+
+export function clearStoredSession() {
+  if (typeof window === "undefined" || typeof localStorage === "undefined") return;
+  try {
+    localStorage.removeItem(TOKEN_STORAGE_KEY);
+    localStorage.removeItem(USER_STORAGE_KEY);
+    localStorage.removeItem(SESSION_ACTIVE_KEY);
+  } catch {
+    // Ignore
+  }
+}
+
 async function rawFetchJson<T>(url: string, init: RequestInit = {}): Promise<T> {
-  const headers = {
+  const headers: Record<string, string> = {
     "Content-Type": "application/json",
-    ...(init.headers || {}),
+    ...((init.headers as Record<string, string>) || {}),
   };
+
+  // If token is stored in localStorage, include Authorization header
+  if (typeof window !== "undefined") {
+    const token = getStoredToken();
+    if (token && !headers["Authorization"] && !headers["authorization"]) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+  }
 
   let res: Response;
   try {
@@ -212,40 +277,67 @@ export async function fetchJson<T>(url: string, options: FetchJsonOptions = {}):
 export const api = {
   auth: {
     async me(options?: FetchJsonOptions) {
-      return fetchJson<{ user: { id: string; email: string } }>("/api/auth/me", {
-        retry: true,
-        ...options,
-      });
+      try {
+        const res = await fetchJson<{ user: { id: string; email: string } }>("/api/auth/me", {
+          retry: true,
+          ...options,
+        });
+        if (res?.user && typeof window !== "undefined") {
+          setStoredSession(getStoredToken() || "", res.user);
+        }
+        return res;
+      } catch (err: any) {
+        if (err?.status === 401) {
+          clearStoredSession();
+        }
+        throw err;
+      }
     },
     async login(email: string, passwordPlain: string, options?: FetchJsonOptions) {
-      return fetchJson<{ user: { id: string; email: string }; token: string }>("/api/auth/login", {
+      const res = await fetchJson<{ user: { id: string; email: string }; token: string }>("/api/auth/login", {
         method: "POST",
         body: JSON.stringify({ email, password: passwordPlain }),
         retry: true,
         ...options,
       });
+      if (res?.token && res?.user) {
+        setStoredSession(res.token, res.user);
+      }
+      return res;
     },
     async register(email: string, passwordPlain: string, options?: FetchJsonOptions) {
-      return fetchJson<{ user: { id: string; email: string }; token: string }>("/api/auth/register", {
+      const res = await fetchJson<{ user: { id: string; email: string }; token: string }>("/api/auth/register", {
         method: "POST",
         body: JSON.stringify({ email, password: passwordPlain }),
         retry: true,
         ...options,
       });
+      if (res?.token && res?.user) {
+        setStoredSession(res.token, res.user);
+      }
+      return res;
     },
     async signup(email: string, passwordPlain: string, options?: FetchJsonOptions) {
-      return fetchJson<{ user: { id: string; email: string }; token: string }>("/api/auth/signup", {
+      const res = await fetchJson<{ user: { id: string; email: string }; token: string }>("/api/auth/signup", {
         method: "POST",
         body: JSON.stringify({ email, password: passwordPlain }),
         retry: true,
         ...options,
       });
+      if (res?.token && res?.user) {
+        setStoredSession(res.token, res.user);
+      }
+      return res;
     },
     async logout(options?: FetchJsonOptions) {
-      return fetchJson<{ message: string }>("/api/auth/logout", {
-        method: "POST",
-        ...options,
-      });
+      try {
+        return await fetchJson<{ message: string }>("/api/auth/logout", {
+          method: "POST",
+          ...options,
+        });
+      } finally {
+        clearStoredSession();
+      }
     },
     async demoLogin(options?: FetchJsonOptions) {
       try {
