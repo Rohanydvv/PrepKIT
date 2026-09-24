@@ -54,9 +54,18 @@ export async function fetchRobotsPolicy(baseUrl: string): Promise<RobotsPolicy> 
 }
 
 export function isPathAllowed(pathname: string, policy: RobotsPolicy): boolean {
-  for (const dis of policy.disallowedPaths) {
+  if (!policy || !policy.disallowedPaths || policy.disallowedPaths.length === 0) {
+    return true;
+  }
+  const cleanPath = pathname.startsWith("/") ? pathname : `/${pathname}`;
+  for (const rawDis of policy.disallowedPaths) {
+    const dis = rawDis.trim();
+    if (!dis) continue;
     if (dis === "/") return false;
-    if (pathname.startsWith(dis)) return false;
+    const disNoSlash = dis.endsWith("/") ? dis.slice(0, -1) : dis;
+    if (cleanPath === disNoSlash || cleanPath.startsWith(disNoSlash + "/")) {
+      return false;
+    }
   }
   return true;
 }

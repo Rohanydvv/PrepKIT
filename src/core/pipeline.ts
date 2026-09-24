@@ -17,6 +17,7 @@ export interface PipelineOptions {
   company_url: string;
   days: number;
   company_name?: string;
+  allowLocalhost?: boolean;
   onProgress?: (p: PipelineProgress) => void;
 }
 
@@ -34,7 +35,7 @@ export interface PipelineOptions {
 export async function generateInterviewPrepKit(
   options: PipelineOptions
 ): Promise<InterviewKit> {
-  const { jd, company_url, days, onProgress } = options;
+  const { jd, company_url, days, onProgress, allowLocalhost } = options;
 
   const emit = (stage: PipelineProgress["stage"], message: string, percent: number) => {
     if (onProgress) {
@@ -50,7 +51,7 @@ export async function generateInterviewPrepKit(
 
   // Step 2: Crawl Company Website
   emit("CRAWLING_COMPANY", `Crawling company site at ${company_url}...`, 30);
-  const crawledResult = await crawlCompanySite(company_url);
+  const crawledResult = await crawlCompanySite(company_url, { allowLocalhost });
 
   // Derive company name if not explicitly provided
   let detectedCompanyName = options.company_name || "";

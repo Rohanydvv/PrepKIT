@@ -53,13 +53,21 @@ describe("Deterministic Schedule Allocator (Section 8)", () => {
     },
   ];
 
-  it("produces exactly the requested number of days", () => {
-    [1, 3, 5, 14, 60].forEach((targetDays) => {
+  it("produces exactly the requested number of days (1, 2, 5, 30, 60)", () => {
+    [1, 2, 5, 30, 60].forEach((targetDays) => {
       const schedule = allocateSchedule(sampleQuestions, sampleRequirements, targetDays);
       expect(schedule.days_available).toBe(targetDays);
       expect(schedule.days.length).toBe(targetDays);
       expect(schedule.days[0].day).toBe(1);
       expect(schedule.days[targetDays - 1].day).toBe(targetDays);
+
+      // Verify no NaN, integer minutes, and valid questions for every day
+      schedule.days.forEach((day) => {
+        expect(Number.isInteger(day.minutes)).toBe(true);
+        expect(day.minutes).toBeGreaterThan(0);
+        expect(Number.isNaN(day.minutes)).toBe(false);
+        expect(day.question_ids.length).toBeGreaterThan(0);
+      });
     });
   });
 

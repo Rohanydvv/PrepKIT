@@ -56,7 +56,10 @@ async function fetchWithRetry(url: string, retries = MAX_RETRIES): Promise<strin
  * 6. Follows relative links accurately without hostname assumptions.
  * 7. Extracts and cleans semantic text, sanitizing prompt injections.
  */
-export async function crawlCompanySite(companyUrlInput: string): Promise<CrawledResult> {
+export async function crawlCompanySite(
+  companyUrlInput: string,
+  options?: { allowLocalhost?: boolean }
+): Promise<CrawledResult> {
   const notes: string[] = [];
   const pagesUsed: string[] = [];
 
@@ -78,7 +81,7 @@ export async function crawlCompanySite(companyUrlInput: string): Promise<Crawled
   }
 
   // 1. SSRF Guard
-  const safety = isSafeUrl(normalizedUrl);
+  const safety = isSafeUrl(normalizedUrl, options);
   if (!safety.safe || !safety.url) {
     return {
       baseUrl: normalizedUrl,

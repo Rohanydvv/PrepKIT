@@ -70,6 +70,9 @@ export function sanitizeUntrustedContent(content: string): string {
     .replace(/<\/?system>/gi, "[system]")
     .replace(/<\/?prompt>/gi, "[prompt]")
     .replace(/<\/?instruction>/gi, "[instruction]")
-    .replace(/ignore\s+(all\s+)?previous\s+instructions/gi, "[neutralized directive]")
+    .replace(/<\|im_start\|>|<\|im_end\|>|<\|system\|>|<\|user\|>|<\|assistant\|>/gi, "[delimiter]")
+    .replace(/(?:ignore|disregard|forget)\s+(?:all\s+)?(?:previous|prior|above)\s+(?:instructions|prompts|rules)/gi, "[neutralized directive]")
+    .replace(/(?:you\s+are\s+now\s+(?:in\s+)?|act\s+as\s+|switch\s+to\s+)?(?:developer\s+mode|dan\s+mode|unrestricted\s+mode)/gi, "[neutralized directive]")
+    .replace(/(?:system\s*prompt\s*:|new\s*instructions\s*:)/gi, "[neutralized header]:")
     .trim();
 }

@@ -86,6 +86,7 @@ async function runBatchEvaluation() {
         jd: item.jd,
         company_url: item.company_url,
         days: item.days,
+        allowLocalhost: true,
         onProgress: (p) => {
           process.stdout.write(`  -> [${p.stage}] ${p.message}\r`);
         },
