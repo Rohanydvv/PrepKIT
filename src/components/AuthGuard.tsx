@@ -10,6 +10,10 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
+    if (typeof window !== "undefined" && sessionStorage.getItem("prepkit_logging_out") === "true") {
+      // User explicitly clicked logout; do not intercept with /login
+      return;
+    }
     if (!loading && !isAuthenticated && !connectionError) {
       router.replace("/login");
     }

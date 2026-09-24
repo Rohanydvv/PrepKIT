@@ -22,9 +22,10 @@ export function Navbar({ kitId }: { kitId?: string }) {
   const handleLogout = async () => {
     try {
       await logout();
-      router.push("/");
     } catch {
-      router.push("/");
+      if (typeof window !== "undefined") {
+        window.location.href = "/";
+      }
     }
   };
 

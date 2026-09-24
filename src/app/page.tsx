@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { useAuth } from "@/lib/auth";
 import { hasStoredSession } from "@/lib/api";
 import { DashboardView } from "@/components/DashboardView";
@@ -8,6 +9,14 @@ import { Loader2, Sparkles, RefreshCw } from "lucide-react";
 
 export default function RootPage() {
   const { isAuthenticated, loading, retryState, connectionError, retryConnection } = useAuth();
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        sessionStorage.removeItem("prepkit_logging_out");
+      } catch {}
+    }
+  }, []);
 
   // If user previously logged in on this device and we are actively validating their session:
   if (loading && hasStoredSession()) {

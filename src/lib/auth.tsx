@@ -112,6 +112,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const logout = useCallback(async () => {
+    if (typeof window !== "undefined") {
+      try {
+        sessionStorage.setItem("prepkit_logging_out", "true");
+      } catch {}
+    }
     try {
       await api.auth.logout();
     } finally {
@@ -119,6 +124,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(null);
       setConnectionError(false);
       setRetryState(null);
+      if (typeof window !== "undefined" && typeof window.location !== "undefined") {
+        window.location.href = "/";
+      }
     }
   }, []);
 
