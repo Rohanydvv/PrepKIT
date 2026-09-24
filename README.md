@@ -38,6 +38,7 @@ The goal is to turn an unstructured job opportunity into a practical, day-by-day
 14. [Security & Prompt Injection Defense](#14-security--prompt-injection-defense)
 15. [Quickstart & Setup](#15-quickstart--setup)
 16. [Automated Testing & Verification](#16-automated-testing--verification)
+17. [Walkthrough Video Script (3-4 Minutes)](#17-walkthrough-video-script-3-4-minutes)
 
 ---
 
@@ -213,14 +214,17 @@ When a candidate clicks **"Regenerate Technical Questions"**:
 
 Scheduling is an arithmetic and allocation problem—not something that should be delegated to an LLM prompt.
 
-- **Exact Day Matching**: Produces exactly the requested number of days (`days_available`), tested across 1, 3, 5, 14, and 60 days.
+- **Exact Day Matching**: Produces exactly the requested number of days (`days_available`), deterministically verified across **1, 2, 5, 30, and 60 days**.
 - **Difficulty & Priority Curve**:
-  - Harder (`difficulty: 3`) and must-have questions land on early days (Days 1, 2, ...).
+  - Harder (`difficulty: 3`) and must-have (`priority: "must"`) questions land on early days (Days 1, 2, ...).
   - Behavioural polish, company mission, and mock interview practice land on later days.
-- **Integer Minutes**: Daily study durations are calculated as integer minutes (e.g. 30, 45, 60 mins), eliminating floats.
+  - Every single must-have requirement is guaranteed to appear somewhere in the schedule.
+- **Integer Minutes**: Daily study durations are calculated as integer minutes (between 25 and 90 mins, no NaN, no negative values), eliminating floats.
 - **Edge Case Resilience**:
   - `days = 1`: Consolidates all must-have topics into an intensive high-yield crash course.
-  - `days = 60`: Distributes questions across all 60 days with progressive spaced reinforcement; zero empty days.
+  - `days = 2`: Slices high-yield system architecture on Day 1 and behavioural/cultural alignment on Day 2.
+  - `days = 5`: Standard progressive track with technical core, architecture, STAR drills, and final polish.
+  - `days = 30 & 60`: Distributes questions across all 30/60 days with progressive Ebbinghaus spaced reinforcement; zero empty days and anti-adjacent duplicate prevention.
 
 ---
 
@@ -364,20 +368,128 @@ PrepKIT includes out-of-the-box deployment blueprints for the free tiers of Verc
 
 ## 16. Automated Testing & Verification
 
-PrepKIT includes a comprehensive Vitest automated test suite:
+PrepKIT includes a comprehensive Vitest automated test suite covering unit, integration, security, scheduler, and evaluator paths:
 
 ```bash
 npm test
 ```
 
-### Test Results (20/20 Passing):
-- **`tests/scheduler.test.ts` (7 tests)**: Verifies exact day counts (1, 3, 5, 14, 60 days), integer minutes, must-have requirement coverage, and priority sorting.
-- **`tests/coverage.test.ts` (3 tests)**: Verifies gap identification, Second-Pass gap closing, and prevention of redundant passes.
-- **`tests/validator.test.ts` (7 tests)**: Verifies strict kit schema conformity, category validation, and referential integrity.
-- **`tests/evaluate.test.ts` (3 tests)**: Verifies full end-to-end pipeline execution, stub JD handling, and unreachable site recovery.
+### Test Results (64/64 Passing across 8 Test Suites):
+- **`tests/crawler.test.ts` (13 tests)**: Verifies SSRF protection (blocking loopback, private IPv4/IPv6, and cloud metadata `169.254.169.254` while permitting localhost in evaluation mode), robots.txt policy compliance (`/allowed` vs `/private`), heuristic relative link ranking, and prompt injection neutralization (`<system>`, ChatML delimiters, developer mode directives).
+- **`tests/scheduler.test.ts` (7 tests)**: Verifies exact day counts (1, 2, 5, 30, and 60 days), integer minute allocation (25-90 min, no NaN, no negative values), must-have requirement representation, difficulty curves, and anti-adjacent duplicate prevention.
+- **`tests/coverage.test.ts` (3 tests)**: Verifies deterministic gap identification, Second-Pass gap closing, and prevention of redundant passes with bounded loop termination.
+- **`tests/validator.test.ts` (7 tests)**: Verifies strict Appendix A and Appendix B kit schema conformity, category validation, and referential integrity.
+- **`tests/evaluate.test.ts` (3 tests)**: Verifies full end-to-end pipeline execution, stub JD handling (2-line stub without phantom hallucinated requirements), and unreachable company site recovery.
+- **`tests/entry_gate.test.ts` (10 tests)**: Verifies authentication gating, session verification, redirect logic, and protected route access.
+- **`tests/auth.test.ts` (14 tests)**: Verifies user registration, password hashing (bcrypt), JWT generation, login validation, and MongoDB Atlas persistence.
+- **`tests/retry.test.ts` (7 tests)**: Verifies frontend cold-start recovery, bounded retries with jitter, and automatic reconnection.
+
+### Clean Clone Verification
+PrepKIT is verified to build, pass all tests, and execute the batch evaluation CLI (`npm run evaluate`) from a clean clone in a fresh directory with zero external database dependencies.
+
+---
+
+## 17. Walkthrough Video Script (3-4 Minutes)
+
+This script provides a structured, professional, timestamped voiceover and visual guide for demonstrating PrepKIT in 3 to 4 minutes.
+
+---
+
+### [0:00 - 0:30] Introduction: The Problem & The Mission
+
+**Visual**: Open on the PrepKIT landing page (`/`). Show the clean, modern interface with the hero: *"Your Next Interview, Prepared Around You."*
+
+**Speaker**:
+> "Hello! Preparing for technical interviews today is broken. Candidates either grind generic LeetCode problems that have nothing to do with what the company actually builds, or they get shallow, one-shot AI summaries that hallucinate tech stacks and dump unorganized walls of text.
+>
+> I built PrepKIT to fix this. PrepKIT is a production-grade, AI-driven interview preparation platform that turns any job description and company website into a personalized, day-by-day preparation system—grounded in real company architecture, verified requirement coverage, and active practice."
+
+---
+
+### [0:30 - 1:15] Creating a Kit & The Live Research Pipeline
+
+**Visual**: Click **"1-Click Quick Demo Access"** to enter the authenticated dashboard. Click **"New Prep Kit"**. Paste a real job description (e.g. *Senior Distributed Systems Engineer*) and company URL (e.g. `https://stripe.com` or `https://example.com`), select **5 Days**, and click **"Generate Prep Kit"**.
+Show the live Server-Sent Events (SSE) progress stepper as it advances through stages:
+1. `EXTRACTING_REQUIREMENTS`
+2. `CRAWLING_COMPANY`
+3. `SEARCHING_PUBLIC_DISCUSSIONS`
+4. `SYNTHESIZING_BRIEF`
+5. `CHECKING_COVERAGE`
+6. `ALLOCATING_SCHEDULE`
+
+**Speaker**:
+> "Let’s create a kit for a Senior Distributed Systems Engineer. We enter the job description, the company URL, and specify that we have 5 days to prepare.
+>
+> When I hit Generate, PrepKIT doesn't just send one giant prompt to an LLM. It executes a multi-step deliberate pipeline:
+> First, our crawler scans the company website, obeys robots.txt, respects SSRF guardrails, and uses heuristic link ranking to locate engineering blogs and career pages.
+> Next, it searches public interview discussions to uncover interview round formats.
+> Then, it extracts explicit requirements with stable IDs—classifying each as must-have or nice-to-have.
+> Finally, our deterministic coverage checker verifies whether any must-have skills are missing questions, triggering an automatic Second Pass loop if needed to guarantee 100% coverage."
+
+---
+
+### [1:15 - 2:00] The Kit Builder & State-Preserving Regeneration
+
+**Visual**: The generated kit opens in the **Kit Builder** (`/kit/[id]`). Show the company brief, the categorized questions (Technical, System Design, Behavioural, Company Fit), and the provenance tags.
+Edit a question inline (change the prompt slightly). Click the **Pin icon** on another question to pin it. Then click **"Regenerate Technical Questions"**. Show that the pinned question and edited question remain intact while only unpinned questions refresh.
+
+**Speaker**:
+> "Welcome to the Kit Builder. Here, you see the truthful company operating brief, role expectations, and categorized questions partitioned into Technical, System Design, STAR-format Behavioural, and Company Fit.
+>
+> Crucially, candidates can customize everything. Every question tracks its provenance—whether it was generated, edited, or manually created.
+> Notice that if I edit this Kafka question, and pin this System Design question, and then click 'Regenerate', PrepKIT preserves my edits and pinned items while cleanly refreshing only the unpinned material. Your preparation adapts with you without destroying your work."
+
+---
+
+### [2:00 - 2:45] Deterministic Study Schedule & Practice Mode
+
+**Visual**: Click on the **Schedule** tab (`/kit/[id]/schedule`). Show the day-by-day roadmap (Day 1 through Day 5) with integer minutes and dynamic topic badges.
+Then click on the **Practice** tab (`/kit/[id]/practice`). Show the 3D interactive flashcards. Press `Space` to flip a card. Click Confidence rating `1`, `2`, or `3`. Show the progress bar updating.
+
+**Speaker**:
+> "Now let's look at the Study Schedule. Scheduling is pure arithmetic—not an LLM guess. Our allocator calculates exact day allocations—whether you have 1 day for a crash course or 60 days for deep mastery. High-priority must-haves and harder difficulty items land on early days, while behavioural polish lands near the end, with realistic integer study minutes.
+>
+> In Practice Mode, passive reading becomes active recall. We have smooth 3D flip flashcards with keyboard shortcuts. As you rate your confidence from 1 to 3, PrepKIT queues your lowest-confidence topics first using spaced repetition algorithms."
+
+---
+
+### [2:45 - 3:30] AI Mock Interview Coach & Real-Time Rubric Scoring
+
+**Visual**: Navigate to **Mock Interview** (`/kit/[id]/mock-interview`). Select a behavioural question: *"Describe a technical disagreement you had with a team member."* Click the microphone icon to dictate an answer using speech-to-text (or type a response). Click **"Submit for Evaluation"**.
+Show the evaluation results card appearing with scores:
+- Technical Accuracy & Depth (22/25)
+- Structure & STAR Framework (24/25)
+- Company & Role Alignment (21/25)
+- Clarity & Delivery (23/25)
+- Overall Score: 90/100
+- Show Strengths, Improvements, and the Exemplary Model Answer.
+
+**Speaker**:
+> "Next is the AI Mock Interview Coach. You can rehearse either by typing or by speaking directly into your microphone using the Web Speech API.
+>
+> Once submitted, our coach grades your response against a rigorous 4-point rubric: Technical Depth, STAR Structure, Company Alignment, and Communication Clarity.
+> In addition to numeric feedback, you receive bulleted strengths, actionable improvement areas, and a complete exemplary model answer tailored to the target company."
+
+---
+
+### [3:30 - 4:00] Printable Cheat Sheet, Standalone CLI & Conclusion
+
+**Visual**: Show the **Printable Cheat Sheet** (`/kit/[id]/cheat-sheet`) with clean one-pager print formatting.
+Briefly transition to the terminal and show the CLI runner:
+`npm run evaluate -- --input cases.json --output kits.json`
+Show the CLI processing cases offline with 100% schema validation.
+Return to the dashboard or hero page.
+
+**Speaker**:
+> "Finally, 30 minutes before your interview, you can open the Printable Cheat Sheet for an A4-optimized, high-density summary of company architecture, STAR blueprints, and last-minute talking points.
+>
+> For developers and automated evaluation, PrepKIT includes a standalone CLI runner—`npm run evaluate`—that processes multiple roles in batch mode with zero database dependencies and strict Appendix A/B schema validation.
+>
+> With 64 automated tests passing across 8 suites and verified clean-clone support, PrepKIT delivers an end-to-end, resilient interview preparation platform. Thank you!"
 
 ---
 
 ## Author
 Designed and developed by **Rohan Yadav**  
 GitHub: [@Rohanydvv](https://github.com/Rohanydvv)
+
