@@ -18,6 +18,10 @@ export default {
           900: "#312e81",
         },
       },
+      boxShadow: {
+        brand: "0 4px 14px 0 rgba(79, 70, 229, 0.20)",
+        "brand-sm": "0 2px 8px 0 rgba(99, 102, 241, 0.20)",
+      },
     },
   },
   plugins: [],

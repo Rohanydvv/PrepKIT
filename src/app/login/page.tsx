@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { RetryState, FetchJsonOptions, hasStoredSession } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import {
@@ -13,16 +13,25 @@ import {
   RefreshCw,
 } from "lucide-react";
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { isAuthenticated, loading: authLoading, login, signup, demoLogin } = useAuth();
-  const [isRegister, setIsRegister] = useState(false);
+  const mode = searchParams.get("mode");
+  const isSignupParam = mode === "signup" || mode === "register" || searchParams.get("signup") === "true";
+  const [isRegister, setIsRegister] = useState(isSignupParam);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [retryState, setRetryState] = useState<RetryState | null>(null);
   const [lastAction, setLastAction] = useState<"submit" | "demo" | null>(null);
+
+  useEffect(() => {
+    if (isSignupParam) {
+      setIsRegister(true);
+    }
+  }, [isSignupParam]);
 
   // Requirement 13 & Flow 8: If already authenticated, redirect to dashboard immediately
   useEffect(() => {
@@ -349,3 +358,18 @@ export default function LoginPage() {
     </div>
   );
 }
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600" />
+        </div>
+      }
+    >
+      <LoginForm />
+    </Suspense>
+  );
+}
+
