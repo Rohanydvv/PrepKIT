@@ -22,9 +22,9 @@ export function Navbar({ kitId }: { kitId?: string }) {
   const handleLogout = async () => {
     try {
       await logout();
-      router.push("/login");
+      router.push("/");
     } catch {
-      router.push("/login");
+      router.push("/");
     }
   };
 

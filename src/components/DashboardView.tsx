@@ -35,7 +35,7 @@ export function DashboardView() {
     } catch (err: any) {
       if (err?.status === 401) {
         await logout();
-        router.push("/login");
+        router.push("/");
       }
     } finally {
       setLoading(false);
