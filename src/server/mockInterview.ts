@@ -1,4 +1,5 @@
 import { llmClient } from "../core/llm/client.js";
+import { evaluateCandidateAnswerOffline } from "../core/llm/mockEvaluator.js";
 
 export interface MockInterviewEvaluation {
   score: number; // 0 to 100
@@ -62,15 +63,15 @@ Evaluate this answer and provide scores and coaching feedback.`;
       userPrompt
     );
 
+    const rawScores = res.rubricScores || ({} as any);
     const rubricScores = {
-      depth: Math.min(25, Math.max(0, res.rubricScores?.depth ?? 18)),
-      structure: Math.min(25, Math.max(0, res.rubricScores?.structure ?? 18)),
-      alignment: Math.min(25, Math.max(0, res.rubricScores?.alignment ?? 18)),
-      clarity: Math.min(25, Math.max(0, res.rubricScores?.clarity ?? 18)),
+      depth: Math.min(25, Math.max(0, Math.round(Number(rawScores.depth)) || 0)),
+      structure: Math.min(25, Math.max(0, Math.round(Number(rawScores.structure)) || 0)),
+      alignment: Math.min(25, Math.max(0, Math.round(Number(rawScores.alignment)) || 0)),
+      clarity: Math.min(25, Math.max(0, Math.round(Number(rawScores.clarity)) || 0)),
     };
 
     const score =
-      res.score ??
       rubricScores.depth + rubricScores.structure + rubricScores.alignment + rubricScores.clarity;
 
     return {
@@ -79,25 +80,25 @@ Evaluate this answer and provide scores and coaching feedback.`;
       strengths:
         Array.isArray(res.strengths) && res.strengths.length > 0
           ? res.strengths
-          : ["Addressed the core intent of the question"],
+          : ["Engaged directly with the interview prompt."],
       improvements:
         Array.isArray(res.improvements) && res.improvements.length > 0
           ? res.improvements
-          : ["Provide more concrete metrics and failure recovery examples"],
+          : ["Expand the response with more concrete implementation details."],
       modelAnswer:
         res.modelAnswer?.trim() ||
         `A high-scoring answer would structure key points around: ${answerOutline}`,
     };
   } catch (err) {
-    console.error("[mockInterview] Evaluation fallback:", err);
-    return {
-      score: 75,
-      rubricScores: { depth: 19, structure: 19, alignment: 18, clarity: 19 },
-      strengths: ["Directly engaged with the technical concepts"],
-      improvements: [
-        "Include more concrete production numbers and edge-case handling",
-      ],
-      modelAnswer: `Strong answers structure the scenario using the STAR framework, specifically citing technical trade-offs: ${answerOutline}`,
-    };
+    console.warn(
+      "[mockInterview] Online evaluation error or fallback, using genuine offline evaluator:",
+      (err as Error).message
+    );
+    return evaluateCandidateAnswerOffline({
+      category,
+      questionPrompt,
+      answerOutline,
+      candidateAnswer,
+    });
   }
 }

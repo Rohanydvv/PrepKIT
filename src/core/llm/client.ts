@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import axios from "axios";
 import { globalRateLimiter } from "./rateLimiter.js";
+import { evaluateCandidateAnswerOffline } from "./mockEvaluator.js";
 
 export interface LLMMessage {
   role: "system" | "user" | "assistant";
@@ -379,6 +380,11 @@ export class LLMClient {
           },
         ],
       });
+    }
+
+    // 6. Mock Interview Evaluation (Offline Heuristic)
+    if (systemPrompt.includes("EVALUATE_CANDIDATE_ANSWER")) {
+      return JSON.stringify(evaluateCandidateAnswerOffline(userPrompt));
     }
 
     return "{}";
