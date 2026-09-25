@@ -19,8 +19,6 @@ import {
   RefreshCw,
   ChevronDown,
   ChevronUp,
-  Layers,
-  BookOpen,
 } from "lucide-react";
 
 /**
@@ -83,6 +81,10 @@ export default function MockInterviewPage() {
   const [isRecording, setIsRecording] = useState(false);
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [blueprintExpanded, setBlueprintExpanded] = useState(true);
+  const [expandedBlueprintStages, setExpandedBlueprintStages] = useState<Set<number>>(new Set([0]));
+  const [showAllStrengths, setShowAllStrengths] = useState(false);
+  const [showAllImprovements, setShowAllImprovements] = useState(false);
+  const [showCriteria, setShowCriteria] = useState(false);
   const [evaluation, setEvaluation] = useState<{
     score: number;
     rubricScores: { depth: number; structure: number; alignment: number; clarity: number };
@@ -162,11 +164,23 @@ export default function MockInterviewPage() {
         candidateAnswer
       );
       setEvaluation(res.evaluation);
+      setShowAllStrengths(false);
+      setShowAllImprovements(false);
+      setExpandedBlueprintStages(new Set([0]));
     } catch (err) {
       alert("Evaluation failed: " + (err as Error).message);
     } finally {
       setIsEvaluating(false);
     }
+  };
+
+  const toggleBlueprintStage = (idx: number) => {
+    setExpandedBlueprintStages((prev) => {
+      const next = new Set(prev);
+      if (next.has(idx)) next.delete(idx);
+      else next.add(idx);
+      return next;
+    });
   };
 
   if (loading || !record) {
@@ -191,12 +205,12 @@ export default function MockInterviewPage() {
   const modelAnswerSections = evaluation ? parseModelAnswerSections(evaluation.modelAnswer) : [];
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50">
+    <div className="min-h-screen lg:h-screen flex flex-col bg-slate-50 lg:overflow-hidden">
       <Navbar kitId={kitId} />
 
-      <main className="flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+      <div className="flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:overflow-hidden flex flex-col">
         {/* Navigation & Header Bar */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 shrink-0">
           <div className="flex items-center space-x-3">
             <Link
               href={`/kit/${kitId}`}
@@ -221,12 +235,12 @@ export default function MockInterviewPage() {
           </div>
         </div>
 
-        {/* 2-Column Wide Workspace Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-[400px_minmax(0,1fr)] xl:grid-cols-[440px_minmax(0,1fr)] gap-6 lg:gap-8 items-start">
+        {/* 2-Column Wide Workspace Layout with independent scroll containers on desktop */}
+        <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[400px_minmax(0,1fr)] xl:grid-cols-[440px_minmax(0,1fr)] gap-6 lg:gap-8 items-start lg:overflow-hidden">
           {/* ======================================================== */}
           {/* LEFT COLUMN: INTERVIEW CONTEXT & ACTIVE QUESTION        */}
           {/* ======================================================== */}
-          <div className="space-y-5 lg:sticky lg:top-24">
+          <div className="lg:h-full lg:overflow-y-auto space-y-4 pr-1 scrollbar-thin">
             {/* Question Selector Card */}
             <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs">
               <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">
@@ -240,6 +254,9 @@ export default function MockInterviewPage() {
                     setSelectedQuestion(match);
                     setCandidateAnswer("");
                     setEvaluation(null);
+                    setShowAllStrengths(false);
+                    setShowAllImprovements(false);
+                    setExpandedBlueprintStages(new Set([0]));
                   }
                 }}
                 className="w-full text-xs font-semibold p-2.5 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition"
@@ -284,17 +301,32 @@ export default function MockInterviewPage() {
                   </h2>
                 </div>
 
-                {/* Expected Talking Points Box */}
+                {/* Expected Talking Points Box with Progressive Disclosure */}
                 <div className="bg-slate-50/80 p-4 rounded-xl border border-slate-200/60 text-xs text-slate-700 space-y-1.5">
-                  <div className="font-bold text-slate-800 flex items-center space-x-1.5 mb-1">
-                    <Lightbulb className="h-3.5 w-3.5 text-amber-500" />
-                    <span>Expected Talking Points & Criteria:</span>
+                  <div className="flex items-center justify-between">
+                    <div className="font-bold text-slate-800 flex items-center space-x-1.5">
+                      <Lightbulb className="h-3.5 w-3.5 text-amber-500" />
+                      <span>Expected Talking Points & Criteria:</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowCriteria(!showCriteria)}
+                      className="text-[11px] font-semibold text-brand-600 hover:text-brand-700 transition"
+                    >
+                      {showCriteria ? "Compact" : "View full outline"}
+                    </button>
                   </div>
-                  <p className="leading-relaxed text-slate-600">{selectedQuestion.answer_outline}</p>
+                  <p
+                    className={`leading-relaxed text-slate-600 transition-all ${
+                      showCriteria ? "" : "line-clamp-3"
+                    }`}
+                  >
+                    {selectedQuestion.answer_outline}
+                  </p>
                 </div>
 
                 {/* Strategy Prompt Guidance */}
-                <div className="pt-2 text-[11px] text-slate-400 flex items-center space-x-1.5">
+                <div className="pt-1 text-[11px] text-slate-400 flex items-center space-x-1.5">
                   <Sparkles className="h-3 w-3 text-brand-500 shrink-0" />
                   <span>
                     {selectedQuestion.category === "behavioural"
@@ -309,7 +341,7 @@ export default function MockInterviewPage() {
           {/* ======================================================== */}
           {/* RIGHT COLUMN: CANDIDATE ANSWER & AI EVALUATION          */}
           {/* ======================================================== */}
-          <div className="space-y-6 min-w-0">
+          <div className="lg:h-full lg:overflow-y-auto scroll-smooth pr-1 space-y-5 min-w-0">
             {/* Candidate Answer Box */}
             <form
               onSubmit={handleEvaluate}
@@ -456,44 +488,97 @@ export default function MockInterviewPage() {
                   </div>
                 </div>
 
-                {/* Key Strengths & Areas for Improvement (Side-by-Side) */}
+                {/* Key Strengths & Areas for Improvement (Side-by-Side with Progressive Disclosure) */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {/* Strengths */}
                   <div className="p-4 rounded-xl bg-emerald-50/40 border border-emerald-200/60 space-y-2.5">
-                    <h4 className="text-xs font-bold text-emerald-800 uppercase tracking-wider flex items-center space-x-1.5">
-                      <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
-                      <span>Key Strengths</span>
-                    </h4>
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-xs font-bold text-emerald-800 uppercase tracking-wider flex items-center space-x-1.5">
+                        <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                        <span>Key Strengths</span>
+                      </h4>
+                      <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100/60 px-2 py-0.5 rounded-full">
+                        {evaluation.strengths.length}
+                      </span>
+                    </div>
                     <ul className="space-y-1.5 text-xs text-slate-700">
-                      {evaluation.strengths.map((str, idx) => (
+                      {(showAllStrengths
+                        ? evaluation.strengths
+                        : evaluation.strengths.slice(0, 2)
+                      ).map((str, idx) => (
                         <li key={idx} className="flex items-start space-x-2">
                           <span className="text-emerald-500 font-bold shrink-0">•</span>
                           <span className="leading-relaxed">{str}</span>
                         </li>
                       ))}
                     </ul>
+                    {evaluation.strengths.length > 2 && (
+                      <button
+                        type="button"
+                        onClick={() => setShowAllStrengths(!showAllStrengths)}
+                        className="text-[11px] font-bold text-emerald-700 hover:text-emerald-800 flex items-center space-x-1 pt-1 transition"
+                      >
+                        <span>
+                          {showAllStrengths
+                            ? "Show top 2 strengths"
+                            : `+ View all ${evaluation.strengths.length} strengths`}
+                        </span>
+                        {showAllStrengths ? (
+                          <ChevronUp className="h-3 w-3" />
+                        ) : (
+                          <ChevronDown className="h-3 w-3" />
+                        )}
+                      </button>
+                    )}
                   </div>
 
                   {/* Areas for Improvement */}
                   <div className="p-4 rounded-xl bg-amber-50/40 border border-amber-200/60 space-y-2.5">
-                    <h4 className="text-xs font-bold text-amber-800 uppercase tracking-wider flex items-center space-x-1.5">
-                      <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
-                      <span>Areas for Improvement</span>
-                    </h4>
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-xs font-bold text-amber-800 uppercase tracking-wider flex items-center space-x-1.5">
+                        <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
+                        <span>Areas for Improvement</span>
+                      </h4>
+                      <span className="text-[10px] font-bold text-amber-700 bg-amber-100/60 px-2 py-0.5 rounded-full">
+                        {evaluation.improvements.length}
+                      </span>
+                    </div>
                     <ul className="space-y-1.5 text-xs text-slate-700">
-                      {evaluation.improvements.map((imp, idx) => (
+                      {(showAllImprovements
+                        ? evaluation.improvements
+                        : evaluation.improvements.slice(0, 2)
+                      ).map((imp, idx) => (
                         <li key={idx} className="flex items-start space-x-2">
                           <span className="text-amber-500 font-bold shrink-0">•</span>
                           <span className="leading-relaxed">{imp}</span>
                         </li>
                       ))}
                     </ul>
+                    {evaluation.improvements.length > 2 && (
+                      <button
+                        type="button"
+                        onClick={() => setShowAllImprovements(!showAllImprovements)}
+                        className="text-[11px] font-bold text-amber-700 hover:text-amber-800 flex items-center space-x-1 pt-1 transition"
+                      >
+                        <span>
+                          {showAllImprovements
+                            ? "Show top 2 areas"
+                            : `+ View all ${evaluation.improvements.length} improvements`}
+                        </span>
+                        {showAllImprovements ? (
+                          <ChevronUp className="h-3 w-3" />
+                        ) : (
+                          <ChevronDown className="h-3 w-3" />
+                        )}
+                      </button>
+                    )}
                   </div>
                 </div>
 
-                {/* Exemplary Model Answer Blueprint (Structured Section) */}
+                {/* Exemplary Model Answer Blueprint (Interactive Accordion) */}
                 <div className="rounded-2xl border border-slate-200/80 bg-slate-50/60 overflow-hidden">
                   <button
+                    type="button"
                     onClick={() => setBlueprintExpanded(!blueprintExpanded)}
                     className="w-full p-4 sm:p-5 flex items-center justify-between text-left hover:bg-slate-100/60 transition"
                   >
@@ -503,13 +588,13 @@ export default function MockInterviewPage() {
                         <span>Exemplary Answer Blueprint</span>
                       </h4>
                       <p className="text-xs text-slate-500 mt-0.5">
-                        How a high-scoring candidate response could be structured.
+                        Structured blueprint to compare against your candidate response.
                       </p>
                     </div>
 
                     <div className="flex items-center space-x-1 text-slate-400">
                       <span className="text-xs font-semibold hidden sm:inline">
-                        {blueprintExpanded ? "Collapse" : "Expand"}
+                        {blueprintExpanded ? "Collapse All" : "Expand All"}
                       </span>
                       {blueprintExpanded ? (
                         <ChevronUp className="h-4 w-4" />
@@ -521,24 +606,56 @@ export default function MockInterviewPage() {
 
                   {blueprintExpanded && (
                     <div className="p-4 sm:p-5 pt-0 space-y-3">
-                      {modelAnswerSections.map((sec, i) => (
-                        <div
-                          key={i}
-                          className="p-4 rounded-xl bg-white border border-slate-200/70 shadow-2xs space-y-1.5"
-                        >
-                          <div className="flex items-center space-x-2">
-                            <span className="text-[10px] font-extrabold font-mono bg-brand-50 text-brand-700 px-2 py-0.5 rounded border border-brand-200/60">
-                              {sec.step}
-                            </span>
-                            <span className="text-xs font-bold text-slate-800">
-                              {sec.title}
-                            </span>
+                      {modelAnswerSections.map((sec, i) => {
+                        const isStageOpen = expandedBlueprintStages.has(i);
+                        return (
+                          <div
+                            key={i}
+                            className="rounded-xl bg-white border border-slate-200/70 shadow-2xs overflow-hidden transition-all"
+                          >
+                            <button
+                              type="button"
+                              onClick={() => toggleBlueprintStage(i)}
+                              className="w-full p-3.5 sm:p-4 text-left flex items-start justify-between gap-3 hover:bg-slate-50/60 transition"
+                            >
+                              <div className="flex items-start space-x-3 min-w-0">
+                                <span className="text-[10px] font-extrabold font-mono bg-brand-50 text-brand-700 px-2 py-0.5 rounded border border-brand-200/60 shrink-0 mt-0.5">
+                                  {sec.step}
+                                </span>
+                                <div className="min-w-0">
+                                  <div className="text-xs font-bold text-slate-800">
+                                    {sec.title}
+                                  </div>
+                                  {!isStageOpen && (
+                                    <p className="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed">
+                                      {sec.content}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className="flex items-center space-x-1 text-slate-400 shrink-0 mt-0.5">
+                                <span className="text-[11px] font-semibold text-brand-600 hidden sm:inline">
+                                  {isStageOpen ? "Hide" : "Expand"}
+                                </span>
+                                {isStageOpen ? (
+                                  <ChevronUp className="h-3.5 w-3.5 text-slate-500" />
+                                ) : (
+                                  <ChevronDown className="h-3.5 w-3.5 text-slate-500" />
+                                )}
+                              </div>
+                            </button>
+
+                            {isStageOpen && (
+                              <div className="px-4 pb-4 pt-1 sm:px-5 sm:pb-5 border-t border-slate-100 bg-slate-50/20">
+                                <p className="text-xs text-slate-700 leading-relaxed whitespace-pre-wrap pl-0 sm:pl-9">
+                                  {sec.content}
+                                </p>
+                              </div>
+                            )}
                           </div>
-                          <p className="text-xs text-slate-700 leading-relaxed whitespace-pre-wrap pl-0 sm:pl-7">
-                            {sec.content}
-                          </p>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -546,7 +663,7 @@ export default function MockInterviewPage() {
             )}
           </div>
         </div>
-      </main>
+      </div>
     </div>
   );
 }
