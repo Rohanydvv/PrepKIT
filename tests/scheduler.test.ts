@@ -53,51 +53,110 @@ describe("Deterministic Schedule Allocator (Section 8)", () => {
     },
   ];
 
-  it("produces exactly the requested number of days (1, 2, 5, 30, 60)", () => {
-    [1, 2, 5, 30, 60].forEach((targetDays) => {
-      const schedule = allocateSchedule(sampleQuestions, sampleRequirements, targetDays);
-      expect(schedule.days_available).toBe(targetDays);
-      expect(schedule.days.length).toBe(targetDays);
-      expect(schedule.days[0].day).toBe(1);
-      expect(schedule.days[targetDays - 1].day).toBe(targetDays);
+  /**
+   * Helper to verify all fundamental schedule invariants:
+   * - Exact days matching requested days_available
+   * - Sequential 1-indexed days
+   * - Integer minutes (positive, no NaN)
+   * - Global uniqueness: every scheduled question appears AT MOST ONCE
+   * - Reference integrity: every scheduled question ID exists in input questions
+   */
+  function assertScheduleInvariants(
+    schedule: ReturnType<typeof allocateSchedule>,
+    expectedDays: number,
+    validQuestions: Question[]
+  ) {
+    expect(schedule.days_available).toBe(expectedDays);
+    expect(schedule.days.length).toBe(expectedDays);
+    expect(schedule.days[0].day).toBe(1);
+    expect(schedule.days[expectedDays - 1].day).toBe(expectedDays);
 
-      // Verify no NaN, integer minutes, and valid questions for every day
-      schedule.days.forEach((day) => {
-        expect(Number.isInteger(day.minutes)).toBe(true);
-        expect(day.minutes).toBeGreaterThan(0);
-        expect(Number.isNaN(day.minutes)).toBe(false);
-        expect(day.question_ids.length).toBeGreaterThan(0);
-      });
-    });
-  });
+    const validIds = new Set(validQuestions.map((q) => q.id));
+    const allScheduledIds = schedule.days.flatMap((d) => d.question_ids);
 
-  it("ensures every duration is an integer number of minutes", () => {
-    const schedule = allocateSchedule(sampleQuestions, sampleRequirements, 5);
-    schedule.days.forEach((day) => {
+    // Global Uniqueness Invariant
+    expect(new Set(allScheduledIds).size).toBe(allScheduledIds.length);
+
+    schedule.days.forEach((day, index) => {
+      expect(day.day).toBe(index + 1);
       expect(Number.isInteger(day.minutes)).toBe(true);
       expect(day.minutes).toBeGreaterThan(0);
-    });
-  });
+      expect(Number.isNaN(day.minutes)).toBe(false);
+      expect(typeof day.focus).toBe("string");
+      expect(day.focus.length).toBeGreaterThan(0);
 
-  it("ensures every question_id in schedule refers to an existing question", () => {
-    const validQuestionIds = new Set(sampleQuestions.map((q) => q.id));
-    const schedule = allocateSchedule(sampleQuestions, sampleRequirements, 7);
-
-    schedule.days.forEach((day) => {
-      day.question_ids.forEach((qId) => {
-        expect(validQuestionIds.has(qId)).toBe(true);
+      day.question_ids.forEach((id) => {
+        expect(validIds.has(id)).toBe(true);
       });
     });
+  }
+
+  it("produces exactly the requested number of days (1, 2, 5, 30, 60) with integer minutes", () => {
+    [1, 2, 5, 30, 60].forEach((targetDays) => {
+      const schedule = allocateSchedule(sampleQuestions, sampleRequirements, targetDays);
+      assertScheduleInvariants(schedule, targetDays, sampleQuestions);
+    });
   });
 
-  it("ensures every must-have requirement appears somewhere in the schedule", () => {
-    const mustReqIds = sampleRequirements
-      .filter((r) => r.priority === "must")
-      .map((r) => r.id);
-
+  it("TEST 1: Standard multi-day schedule asserts every question ID occurs AT MOST ONCE", () => {
     const schedule = allocateSchedule(sampleQuestions, sampleRequirements, 5);
+    assertScheduleInvariants(schedule, 5, sampleQuestions);
 
-    // Collect all covered requirement IDs in the schedule
+    const allScheduledIds = schedule.days.flatMap((d) => d.question_ids);
+    // Explicitly verify global uniqueness
+    expect(new Set(allScheduledIds).size).toBe(allScheduledIds.length);
+
+    // Track ID frequency across all days
+    const idCounts = new Map<string, number>();
+    for (const day of schedule.days) {
+      for (const qId of day.question_ids) {
+        idCounts.set(qId, (idCounts.get(qId) || 0) + 1);
+      }
+    }
+    for (const [, count] of idCounts) {
+      expect(count).toBe(1);
+    }
+  });
+
+  it("TEST 2: Long timeline edge case (60 days) has exactly 60 days, zero duplicates, no fabricated IDs", () => {
+    const schedule = allocateSchedule(sampleQuestions, sampleRequirements, 60);
+    expect(schedule.days.length).toBe(60);
+    assertScheduleInvariants(schedule, 60, sampleQuestions);
+
+    const allScheduledIds = schedule.days.flatMap((d) => d.question_ids);
+    // Total scheduled questions must be <= available questions
+    expect(allScheduledIds.length).toBeLessThanOrEqual(sampleQuestions.length);
+    // Zero duplicate IDs
+    expect(new Set(allScheduledIds).size).toBe(allScheduledIds.length);
+
+    // Days without new questions must still have positive integer study/review minutes and meaningful focus
+    const emptyDays = schedule.days.filter((d) => d.question_ids.length === 0);
+    expect(emptyDays.length).toBe(60 - sampleQuestions.length);
+    emptyDays.forEach((day) => {
+      expect(day.minutes).toBeGreaterThanOrEqual(25);
+      expect(day.focus).toMatch(/Review|Consolidation|Readiness|Retention|Preparation/i);
+    });
+  });
+
+  it("TEST 3: Short timeline edge case (1-day crash course) has unique questions on Day 1", () => {
+    const schedule = allocateSchedule(sampleQuestions, sampleRequirements, 1);
+    expect(schedule.days.length).toBe(1);
+    assertScheduleInvariants(schedule, 1, sampleQuestions);
+
+    const day1Ids = schedule.days[0].question_ids;
+    expect(day1Ids.length).toBe(sampleQuestions.length);
+    expect(new Set(day1Ids).size).toBe(day1Ids.length);
+    expect(schedule.days[0].focus).toContain("Sprint");
+  });
+
+  it("TEST 4: Coverage and difficulty ordering ensures must-haves covered and harder material earlier", () => {
+    const schedule = allocateSchedule(sampleQuestions, sampleRequirements, 5);
+    assertScheduleInvariants(schedule, 5, sampleQuestions);
+
+    const allScheduledIds = schedule.days.flatMap((d) => d.question_ids);
+    expect(new Set(allScheduledIds).size).toBe(allScheduledIds.length);
+
+    // Collect all covered requirement IDs
     const scheduledReqIds = new Set<string>();
     schedule.days.forEach((day) => {
       day.question_ids.forEach((qId) => {
@@ -108,36 +167,57 @@ describe("Deterministic Schedule Allocator (Section 8)", () => {
       });
     });
 
+    // Ensure every must-have requirement appears in the schedule
+    const mustReqIds = sampleRequirements
+      .filter((r) => r.priority === "must")
+      .map((r) => r.id);
     mustReqIds.forEach((mustId) => {
       expect(scheduledReqIds.has(mustId)).toBe(true);
     });
-  });
 
-  it("schedules harder and higher-priority material earlier (Day 1 vs final days)", () => {
-    const schedule = allocateSchedule(sampleQuestions, sampleRequirements, 5);
+    // Day 1 should feature high difficulty items (difficulty 3)
     const day1QIds = schedule.days[0].question_ids;
     const day1Questions = sampleQuestions.filter((q) => day1QIds.includes(q.id));
-
-    // Day 1 should have high difficulty items
     const day1AvgDifficulty =
       day1Questions.reduce((sum, q) => sum + q.difficulty, 0) / (day1Questions.length || 1);
-
-    expect(day1AvgDifficulty).toBeGreaterThanOrEqual(2);
+    expect(day1AvgDifficulty).toBeGreaterThanOrEqual(2.5);
   });
 
-  it("handles 1-day crash course edge case", () => {
-    const schedule = allocateSchedule(sampleQuestions, sampleRequirements, 1);
-    expect(schedule.days.length).toBe(1);
-    expect(schedule.days[0].question_ids.length).toBeGreaterThan(0);
-    expect(schedule.days[0].focus).toContain("Intensive");
+  it("TEST 5: Determinism produces identical schedules for identical inputs", () => {
+    const scheduleA = allocateSchedule(sampleQuestions, sampleRequirements, 5);
+    const scheduleB = allocateSchedule(sampleQuestions, sampleRequirements, 5);
+
+    expect(scheduleA).toEqual(scheduleB);
+
+    const allScheduledIdsA = scheduleA.days.flatMap((d) => d.question_ids);
+    const allScheduledIdsB = scheduleB.days.flatMap((d) => d.question_ids);
+    expect(new Set(allScheduledIdsA).size).toBe(allScheduledIdsA.length);
+    expect(new Set(allScheduledIdsB).size).toBe(allScheduledIdsB.length);
   });
 
-  it("handles 60-day long timeline edge case without empty days", () => {
-    const schedule = allocateSchedule(sampleQuestions, sampleRequirements, 60);
-    expect(schedule.days.length).toBe(60);
-    schedule.days.forEach((day) => {
-      expect(day.question_ids.length).toBeGreaterThan(0);
-      expect(day.minutes).toBeGreaterThan(0);
+  it("TEST 6: Reference integrity ensures every question_id exists in input questions", () => {
+    [1, 3, 5, 10, 30].forEach((days) => {
+      const schedule = allocateSchedule(sampleQuestions, sampleRequirements, days);
+      assertScheduleInvariants(schedule, days, sampleQuestions);
+
+      const validQuestionIds = new Set(sampleQuestions.map((q) => q.id));
+      schedule.days.forEach((day) => {
+        day.question_ids.forEach((qId) => {
+          expect(validQuestionIds.has(qId)).toBe(true);
+        });
+      });
+    });
+  });
+
+  it("handles empty questions edge case safely", () => {
+    const schedule = allocateSchedule([], sampleRequirements, 3);
+    expect(schedule.days.length).toBe(3);
+    const allScheduledIds = schedule.days.flatMap((d) => d.question_ids);
+    expect(allScheduledIds.length).toBe(0);
+    expect(new Set(allScheduledIds).size).toBe(0);
+    schedule.days.forEach((d) => {
+      expect(d.minutes).toBe(25);
+      expect(d.question_ids).toEqual([]);
     });
   });
 });
