@@ -115,8 +115,14 @@ export async function runCoveragePassLoop(
     analysis = analyzeCoverage(requirements, currentQuestions);
   }
 
+  // Re-index questions to guarantee global sequential uniqueness (q1, q2, ...)
+  const normalizedQuestions = currentQuestions.map((q, idx) => ({
+    ...q,
+    id: `q${idx + 1}`,
+  }));
+
   return {
-    questions: currentQuestions,
+    questions: normalizedQuestions,
     coverage: {
       uncovered_requirement_ids: analysis.uncoveredIds,
       passes: currentPass,

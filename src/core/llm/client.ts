@@ -2,6 +2,10 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import axios from "axios";
 import { globalRateLimiter } from "./rateLimiter.js";
 import { evaluateCandidateAnswerOffline } from "./mockEvaluator.js";
+import {
+  generateDeterministicQuestions,
+  parseRequirementsFromPrompt,
+} from "../generation/deterministicQuestions.js";
 
 export interface LLMMessage {
   role: "system" | "user" | "assistant";
@@ -268,7 +272,7 @@ export class LLMClient {
           }
         });
       } else {
-        reqLines.slice(0, 6).forEach((line, idx) => {
+        reqLines.slice(0, 10).forEach((line, idx) => {
           const isNice = /bonus|preferred|nice to have|plus/i.test(line);
           const isBeh = /mentor|collaborat|team|lead|agile|communication/i.test(line);
           const isDomain = /fintech|healthcare|saas|e-commerce|compliance/i.test(line);
@@ -315,53 +319,24 @@ export class LLMClient {
 
     // 3. Question Bank Generation
     if (systemPrompt.includes("GENERATE_QUESTIONS")) {
-      return JSON.stringify({
-        questions: [
-          {
-            requirement_id: "r1",
-            category: "technical",
-            prompt: "Explain how you manage state and handle performance bottlenecks in high-throughput applications.",
-            answer_outline: "Discuss architectural separation, profiling tools, caching strategies, and memory management.",
-            difficulty: 3,
-          },
-          {
-            requirement_id: "r1",
-            category: "system-design",
-            prompt: "How would you architect a distributed service handling sudden 10x traffic spikes?",
-            answer_outline: "Propose rate-limiting, message queues for asynchronous ingestion, horizontal autoscaling, and database read replicas.",
-            difficulty: 3,
-          },
-          {
-            requirement_id: "r2",
-            category: "behavioural",
-            prompt: "Describe a situation where you had a disagreement with a team member about technical architecture. How did you resolve it?",
-            answer_outline: "Situation: conflicting design choices. Task: align on technical direction. Action: evaluated trade-offs with benchmark data. Result: consensus and on-time delivery.",
-            difficulty: 2,
-          },
-          {
-            requirement_id: "r1",
-            category: "company-fit",
-            prompt: "Why are you interested in working on our core tech stack and product mission?",
-            answer_outline: "Connect personal engineering strengths to the company's product trajectory and customer impact.",
-            difficulty: 1,
-          },
-        ],
-      });
+      const requirements = parseRequirementsFromPrompt(userPrompt);
+      const questions = generateDeterministicQuestions(
+        requirements,
+        "Modern technology company",
+        0
+      );
+      return JSON.stringify({ questions });
     }
 
     // 4. Gap Questions Generation (Second Pass)
     if (systemPrompt.includes("GENERATE_GAP_QUESTIONS")) {
-      return JSON.stringify({
-        questions: [
-          {
-            requirement_id: "r2",
-            category: "technical",
-            prompt: "Walk me through how you ensure test coverage and reliability for this requirement in production.",
-            answer_outline: "Unit tests, integration testing with testcontainers, automated CI checks, and canary deployments.",
-            difficulty: 2,
-          },
-        ],
-      });
+      const requirements = parseRequirementsFromPrompt(userPrompt);
+      const questions = generateDeterministicQuestions(
+        requirements,
+        "Modern technology company",
+        0
+      );
+      return JSON.stringify({ questions });
     }
 
     // 5. Flashcard Generation

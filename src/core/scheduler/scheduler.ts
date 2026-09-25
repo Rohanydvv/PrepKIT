@@ -185,15 +185,25 @@ function determineDynamicFocus(
 
   if (bucket.length === 0) {
     if (dayNum === totalDays) {
-      return "Final Preparation, Mental Readiness & Mock Polish";
+      return "Final Interview Readiness & Mental Rehearsal";
     }
-    if (dayNum > Math.floor(totalDays * 0.75)) {
-      return `Day ${dayNum}: Spaced Self-Review & Flashcard Retention`;
+    if (dayNum === totalDays - 1) {
+      return "Mock Interview Preparation & Timed Outlining";
     }
-    if (dayNum > Math.floor(totalDays * 0.5)) {
-      return `Day ${dayNum}: Concept Consolidation & Practice`;
-    }
-    return `Day ${dayNum}: Independent Research & Review`;
+
+    const reviewThemes = [
+      "Flashcard Retention & Core Concept Reinforcement",
+      "System Design Review & Architectural Trade-offs",
+      "Behavioural Story Practice & STAR Competency Review",
+      "Weak Area Review & Targeted Problem Solving",
+      "Company & Role Research: Culture & Mission Preparation",
+      "Technical Deep-Dive & Edge-Case Review",
+      "API Design, Data Contracts & Schema Review",
+      "Final Technical Review & Spaced Concept Consolidation",
+    ];
+
+    const themeIndex = (dayNum - 1) % reviewThemes.length;
+    return `Day ${dayNum}: ${reviewThemes[themeIndex]}`;
   }
 
   const categories = bucket.map((q) => q.category);
