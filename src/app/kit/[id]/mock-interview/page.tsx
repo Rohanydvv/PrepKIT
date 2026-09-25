@@ -17,7 +17,58 @@ import {
   AlertTriangle,
   Lightbulb,
   RefreshCw,
+  ChevronDown,
+  ChevronUp,
+  Layers,
+  BookOpen,
 } from "lucide-react";
+
+/**
+ * Parses a continuous model answer string into structured blueprint sections (01, 02, 03).
+ */
+function parseModelAnswerSections(text: string) {
+  if (!text) return [];
+
+  // Check if text already contains double-newline paragraphs
+  const paragraphs = text
+    .split(/\n\s*\n/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+
+  const defaultTitles = [
+    "High-Level Architecture & Strategy",
+    "Technical Implementation & Concrete Details",
+    "Trade-offs, Failure Modes & Operational Metrics",
+    "STAR Resolution & Key Takeaways",
+  ];
+
+  if (paragraphs.length >= 2) {
+    return paragraphs.map((content, idx) => ({
+      step: `0${idx + 1}`,
+      title: defaultTitles[idx] || `Stage 0${idx + 1}`,
+      content,
+    }));
+  }
+
+  // Fallback: split by sentences into 2 or 3 balanced stages
+  const sentences = text.match(/[^.!?]+[.!?]+(\s+|$)/g) || [text];
+  if (sentences.length >= 4) {
+    const p1End = Math.ceil(sentences.length / 3);
+    const p2End = Math.ceil((sentences.length * 2) / 3);
+
+    const chunk1 = sentences.slice(0, p1End).join("").trim();
+    const chunk2 = sentences.slice(p1End, p2End).join("").trim();
+    const chunk3 = sentences.slice(p2End).join("").trim();
+
+    return [
+      { step: "01", title: "High-Level Architecture & Strategy", content: chunk1 },
+      { step: "02", title: "Technical Implementation & Concrete Details", content: chunk2 },
+      { step: "03", title: "Trade-offs, Failure Modes & Operational Metrics", content: chunk3 },
+    ];
+  }
+
+  return [{ step: "01", title: "Exemplary Candidate Response", content: text }];
+}
 
 export default function MockInterviewPage() {
   const params = useParams();
@@ -31,6 +82,7 @@ export default function MockInterviewPage() {
   const [candidateAnswer, setCandidateAnswer] = useState("");
   const [isRecording, setIsRecording] = useState(false);
   const [isEvaluating, setIsEvaluating] = useState(false);
+  const [blueprintExpanded, setBlueprintExpanded] = useState(true);
   const [evaluation, setEvaluation] = useState<{
     score: number;
     rubricScores: { depth: number; structure: number; alignment: number; clarity: number };
@@ -119,44 +171,66 @@ export default function MockInterviewPage() {
 
   if (loading || !record) {
     return (
-      <div className="min-h-screen flex flex-col">
+      <div className="min-h-screen flex flex-col bg-slate-50">
         <Navbar kitId={kitId} />
         <div className="flex-1 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600" />
+          <div className="text-center p-8 bg-white rounded-2xl border border-slate-200 shadow-sm max-w-sm w-full mx-4">
+            <RefreshCw className="h-8 w-8 animate-spin text-brand-600 mx-auto" />
+            <h3 className="text-base font-bold text-slate-900 mt-4">Loading Mock Coach...</h3>
+            <p className="text-xs text-slate-500 mt-1">
+              Preparing question rubric and AI assessment models.
+            </p>
+          </div>
         </div>
       </div>
     );
   }
 
   const kit = record.kit;
+  const wordCount = candidateAnswer.trim() ? candidateAnswer.trim().split(/\s+/).length : 0;
+  const modelAnswerSections = evaluation ? parseModelAnswerSections(evaluation.modelAnswer) : [];
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
       <Navbar kitId={kitId} />
 
-      <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-8">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-4">
-          <Link
-            href={`/kit/${kitId}`}
-            className="text-xs font-bold text-slate-500 hover:text-slate-900 flex items-center space-x-1"
-          >
-            <ArrowLeft className="h-3.5 w-3.5" />
-            <span>Back to Builder</span>
-          </Link>
+      <main className="flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        {/* Navigation & Header Bar */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div className="flex items-center space-x-3">
+            <Link
+              href={`/kit/${kitId}`}
+              className="text-xs font-bold text-slate-500 hover:text-slate-900 flex items-center space-x-1.5 bg-white border border-slate-200/80 px-3 py-1.5 rounded-xl shadow-2xs transition"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+              <span>Back to Workspace</span>
+            </Link>
 
-          <span className="text-xs font-bold uppercase tracking-wider bg-amber-50 text-amber-800 px-3 py-1 rounded-full border border-amber-200 flex items-center space-x-1">
-            <Award className="h-3.5 w-3.5 text-amber-600" />
-            <span>AI Mock Interview Simulator</span>
-          </span>
+            <span className="text-xs text-slate-400">•</span>
+
+            <span className="text-xs font-semibold text-slate-700 truncate max-w-md">
+              {kit.role.title} ({kit.source.company || "Company"})
+            </span>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <span className="text-[11px] font-extrabold uppercase tracking-wider bg-amber-50 text-amber-800 px-3 py-1 rounded-full border border-amber-200/80 flex items-center space-x-1.5">
+              <Award className="h-3.5 w-3.5 text-amber-600" />
+              <span>4-Point AI Mock Coach</span>
+            </span>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column: Question Selector & Question Details */}
-          <div className="space-y-6">
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
-                Select Interview Question to Rehearse
+        {/* 2-Column Wide Workspace Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-[400px_minmax(0,1fr)] xl:grid-cols-[440px_minmax(0,1fr)] gap-6 lg:gap-8 items-start">
+          {/* ======================================================== */}
+          {/* LEFT COLUMN: INTERVIEW CONTEXT & ACTIVE QUESTION        */}
+          {/* ======================================================== */}
+          <div className="space-y-5 lg:sticky lg:top-24">
+            {/* Question Selector Card */}
+            <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs">
+              <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">
+                Rehearse Question ({kit.questions.length} Available)
               </label>
               <select
                 value={selectedQuestion?.id || ""}
@@ -168,197 +242,305 @@ export default function MockInterviewPage() {
                     setEvaluation(null);
                   }
                 }}
-                className="w-full text-xs font-semibold p-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
+                className="w-full text-xs font-semibold p-2.5 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition"
               >
                 {kit.questions.map((q) => (
                   <option key={q.id} value={q.id}>
-                    [{q.category.toUpperCase()}] {q.id}: {q.prompt.slice(0, 50)}...
+                    [{q.category.toUpperCase()}] {q.id}: {q.prompt.slice(0, 48)}...
                   </option>
                 ))}
               </select>
             </div>
 
+            {/* Active Question Prompt Card */}
             {selectedQuestion && (
-              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+              <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="font-mono text-xs font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded">
-                    {selectedQuestion.id}
-                  </span>
-                  <span className="text-xs font-bold uppercase tracking-wider text-brand-700 bg-brand-50 px-2 py-0.5 rounded border border-brand-200">
-                    {selectedQuestion.category}
+                  <div className="flex items-center space-x-2">
+                    <span className="font-mono text-xs font-bold bg-slate-100 text-slate-700 px-2.5 py-0.5 rounded-md border border-slate-200/60">
+                      {selectedQuestion.id.toUpperCase()}
+                    </span>
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-brand-700 bg-brand-50 px-2.5 py-0.5 rounded-md border border-brand-200/60">
+                      {selectedQuestion.category.replace("-", " ")}
+                    </span>
+                  </div>
+
+                  <span className="text-xs font-semibold text-slate-400">
+                    <span className="text-amber-500 font-bold">
+                      {"★".repeat(selectedQuestion.difficulty)}
+                    </span>
+                    <span className="text-slate-200">
+                      {"★".repeat(3 - selectedQuestion.difficulty)}
+                    </span>
                   </span>
                 </div>
 
                 <div>
-                  <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+                  <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
                     Interviewer Question
                   </div>
-                  <h3 className="text-base font-bold text-slate-900 leading-snug">
+                  <h2 className="text-lg sm:text-xl font-black text-slate-900 leading-snug tracking-tight">
                     {selectedQuestion.prompt}
-                  </h3>
+                  </h2>
                 </div>
 
-                <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 text-xs text-slate-600">
-                  <div className="font-bold text-slate-700 mb-1 flex items-center space-x-1">
+                {/* Expected Talking Points Box */}
+                <div className="bg-slate-50/80 p-4 rounded-xl border border-slate-200/60 text-xs text-slate-700 space-y-1.5">
+                  <div className="font-bold text-slate-800 flex items-center space-x-1.5 mb-1">
                     <Lightbulb className="h-3.5 w-3.5 text-amber-500" />
-                    <span>Expected Talking Points:</span>
+                    <span>Expected Talking Points & Criteria:</span>
                   </div>
-                  <p className="line-clamp-3">{selectedQuestion.answer_outline}</p>
+                  <p className="leading-relaxed text-slate-600">{selectedQuestion.answer_outline}</p>
+                </div>
+
+                {/* Strategy Prompt Guidance */}
+                <div className="pt-2 text-[11px] text-slate-400 flex items-center space-x-1.5">
+                  <Sparkles className="h-3 w-3 text-brand-500 shrink-0" />
+                  <span>
+                    {selectedQuestion.category === "behavioural"
+                      ? "Formulate with STAR: Situation, Task, Action taken, Result."
+                      : "Lead with architecture trade-offs, scalability, and concrete failure modes."}
+                  </span>
                 </div>
               </div>
             )}
           </div>
 
-          {/* Right Column: Answer Input & Real-time Rubric Evaluation */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Answer Input Box */}
-            <form onSubmit={handleEvaluate} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+          {/* ======================================================== */}
+          {/* RIGHT COLUMN: CANDIDATE ANSWER & AI EVALUATION          */}
+          {/* ======================================================== */}
+          <div className="space-y-6 min-w-0">
+            {/* Candidate Answer Box */}
+            <form
+              onSubmit={handleEvaluate}
+              className="bg-white p-6 sm:p-7 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4"
+            >
               <div className="flex items-center justify-between">
-                <label className="text-sm font-bold text-slate-900">
-                  Your Answer (Type or Dictate Out Loud)
-                </label>
-                <button
-                  type="button"
-                  onClick={handleToggleVoice}
-                  className={`px-3 py-1 rounded-lg text-xs font-semibold flex items-center space-x-1.5 transition ${
-                    isRecording
-                      ? "bg-rose-600 text-white animate-pulse"
-                      : "bg-slate-100 hover:bg-slate-200 text-slate-700"
-                  }`}
-                >
-                  {isRecording ? <MicOff className="h-3.5 w-3.5" /> : <Mic className="h-3.5 w-3.5" />}
-                  <span>{isRecording ? "Listening..." : "Voice Dictation"}</span>
-                </button>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">Your Response</h3>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Speak aloud or type your complete answer before submitting.
+                  </p>
+                </div>
+
+                <div className="flex items-center space-x-3">
+                  <span className="text-xs font-semibold text-slate-400">
+                    {wordCount} words
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={handleToggleVoice}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center space-x-1.5 transition ${
+                      isRecording
+                        ? "bg-rose-600 text-white animate-pulse"
+                        : "bg-slate-100 hover:bg-slate-200 text-slate-700"
+                    }`}
+                  >
+                    {isRecording ? <MicOff className="h-3.5 w-3.5" /> : <Mic className="h-3.5 w-3.5" />}
+                    <span>{isRecording ? "Listening..." : "Dictate Out Loud"}</span>
+                  </button>
+                </div>
               </div>
 
               <textarea
                 required
-                rows={6}
+                rows={7}
                 value={candidateAnswer}
                 onChange={(e) => setCandidateAnswer(e.target.value)}
-                placeholder="Structure your answer (e.g. Using the STAR framework for behavioural, or starting with high-level architecture and trade-offs for technical questions)..."
-                className="w-full text-sm p-4 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 font-sans leading-relaxed"
+                placeholder="Structure your response: state the core design choice, explain your reasoning, reference real metrics or edge cases, and describe the measurable outcome..."
+                className="w-full text-sm p-4 rounded-xl border border-slate-200 text-slate-900 bg-slate-50/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 font-sans leading-relaxed transition"
               />
 
-              <div className="flex justify-end">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+                <span className="text-[11px] text-slate-400">
+                  Evaluated across Technical Depth, STAR Structure, Company Alignment & Clarity.
+                </span>
+
                 <button
                   type="submit"
                   disabled={isEvaluating || !candidateAnswer.trim()}
-                  className="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white rounded-xl text-xs font-semibold shadow-md shadow-brand-600/20 transition flex items-center space-x-2"
+                  className="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white rounded-xl text-xs font-semibold shadow-sm shadow-brand-600/20 transition flex items-center justify-center space-x-2 shrink-0"
                 >
                   {isEvaluating ? (
                     <>
                       <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                      <span>Evaluating Answer with AI Rubric...</span>
+                      <span>Evaluating 4-Point Rubric...</span>
                     </>
                   ) : (
                     <>
                       <Send className="h-3.5 w-3.5" />
-                      <span>Submit for 4-Point Rubric Feedback</span>
+                      <span>Submit for 4-Point Feedback</span>
                     </>
                   )}
                 </button>
               </div>
             </form>
 
-            {/* Evaluation Results Card */}
+            {/* AI Evaluation Results */}
             {evaluation && (
-              <div className="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-sm space-y-6 animate-in fade-in">
+              <div className="bg-white p-6 sm:p-7 rounded-2xl border border-slate-200/80 shadow-2xs space-y-6 animate-in fade-in duration-300">
                 {/* Score Banner */}
-                <div className="flex items-center justify-between p-4 bg-gradient-to-r from-brand-50 to-indigo-50/50 rounded-xl border border-brand-100">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl bg-slate-50 border border-slate-200/80">
                   <div>
-                    <span className="text-xs uppercase font-bold tracking-wider text-brand-600">
+                    <span className="text-[11px] uppercase font-bold tracking-wider text-slate-400">
                       Overall Assessment Score
                     </span>
-                    <h2 className="text-2xl font-black text-slate-900">
-                      {evaluation.score} / 100
-                    </h2>
+                    <div className="flex items-baseline space-x-2 mt-0.5">
+                      <span className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
+                        {evaluation.score}
+                      </span>
+                      <span className="text-base font-bold text-slate-400">/ 100</span>
+                    </div>
                   </div>
-                  <div className="text-right">
+
+                  <div className="sm:text-right">
                     <span
-                      className={`text-xs font-black uppercase px-3 py-1 rounded-full ${
+                      className={`inline-block text-xs font-extrabold uppercase tracking-wider px-3.5 py-1.5 rounded-full border ${
                         evaluation.score >= 80
-                          ? "bg-emerald-100 text-emerald-800"
+                          ? "bg-emerald-50 text-emerald-800 border-emerald-200"
                           : evaluation.score >= 60
-                          ? "bg-amber-100 text-amber-800"
-                          : "bg-rose-100 text-rose-800"
+                          ? "bg-amber-50 text-amber-800 border-amber-200"
+                          : "bg-rose-50 text-rose-800 border-rose-200"
                       }`}
                     >
-                      {evaluation.score >= 80 ? "Strong Hire" : evaluation.score >= 60 ? "Leaning Hire" : "Needs Review"}
+                      {evaluation.score >= 80
+                        ? "Strong Hire"
+                        : evaluation.score >= 60
+                        ? "Leaning Hire"
+                        : "Needs Review"}
                     </span>
                   </div>
                 </div>
 
-                {/* 4-Point Rubric Score Breakdown */}
+                {/* 4-Point Rubric Metrics */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-center">
-                    <div className="text-[11px] font-semibold text-slate-500">Technical Depth</div>
-                    <div className="text-lg font-bold text-slate-900 mt-0.5">
-                      {evaluation.rubricScores.depth} / 25
+                  <div className="p-3.5 bg-slate-50/80 rounded-xl border border-slate-200/70 text-center">
+                    <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                      Technical Depth
+                    </div>
+                    <div className="text-lg font-black text-slate-900 mt-1">
+                      {evaluation.rubricScores.depth}{" "}
+                      <span className="text-xs font-semibold text-slate-400">/ 25</span>
                     </div>
                   </div>
-                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-center">
-                    <div className="text-[11px] font-semibold text-slate-500">STAR Structure</div>
-                    <div className="text-lg font-bold text-slate-900 mt-0.5">
-                      {evaluation.rubricScores.structure} / 25
+
+                  <div className="p-3.5 bg-slate-50/80 rounded-xl border border-slate-200/70 text-center">
+                    <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                      STAR Structure
+                    </div>
+                    <div className="text-lg font-black text-slate-900 mt-1">
+                      {evaluation.rubricScores.structure}{" "}
+                      <span className="text-xs font-semibold text-slate-400">/ 25</span>
                     </div>
                   </div>
-                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-center">
-                    <div className="text-[11px] font-semibold text-slate-500">Company Alignment</div>
-                    <div className="text-lg font-bold text-slate-900 mt-0.5">
-                      {evaluation.rubricScores.alignment} / 25
+
+                  <div className="p-3.5 bg-slate-50/80 rounded-xl border border-slate-200/70 text-center">
+                    <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                      Company Fit
+                    </div>
+                    <div className="text-lg font-black text-slate-900 mt-1">
+                      {evaluation.rubricScores.alignment}{" "}
+                      <span className="text-xs font-semibold text-slate-400">/ 25</span>
                     </div>
                   </div>
-                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-center">
-                    <div className="text-[11px] font-semibold text-slate-500">Delivery & Clarity</div>
-                    <div className="text-lg font-bold text-slate-900 mt-0.5">
-                      {evaluation.rubricScores.clarity} / 25
+
+                  <div className="p-3.5 bg-slate-50/80 rounded-xl border border-slate-200/70 text-center">
+                    <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                      Delivery & Clarity
+                    </div>
+                    <div className="text-lg font-black text-slate-900 mt-1">
+                      {evaluation.rubricScores.clarity}{" "}
+                      <span className="text-xs font-semibold text-slate-400">/ 25</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Strengths & Improvements */}
+                {/* Key Strengths & Areas for Improvement (Side-by-Side) */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="p-4 rounded-xl bg-emerald-50/50 border border-emerald-100">
-                    <h4 className="text-xs font-bold text-emerald-800 uppercase tracking-wider mb-2 flex items-center space-x-1">
-                      <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                  {/* Strengths */}
+                  <div className="p-4 rounded-xl bg-emerald-50/40 border border-emerald-200/60 space-y-2.5">
+                    <h4 className="text-xs font-bold text-emerald-800 uppercase tracking-wider flex items-center space-x-1.5">
+                      <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
                       <span>Key Strengths</span>
                     </h4>
                     <ul className="space-y-1.5 text-xs text-slate-700">
                       {evaluation.strengths.map((str, idx) => (
-                        <li key={idx} className="flex items-start space-x-1.5">
-                          <span className="text-emerald-500">•</span>
-                          <span>{str}</span>
+                        <li key={idx} className="flex items-start space-x-2">
+                          <span className="text-emerald-500 font-bold shrink-0">•</span>
+                          <span className="leading-relaxed">{str}</span>
                         </li>
                       ))}
                     </ul>
                   </div>
 
-                  <div className="p-4 rounded-xl bg-amber-50/50 border border-amber-100">
-                    <h4 className="text-xs font-bold text-amber-800 uppercase tracking-wider mb-2 flex items-center space-x-1">
-                      <AlertTriangle className="h-4 w-4 text-amber-600" />
+                  {/* Areas for Improvement */}
+                  <div className="p-4 rounded-xl bg-amber-50/40 border border-amber-200/60 space-y-2.5">
+                    <h4 className="text-xs font-bold text-amber-800 uppercase tracking-wider flex items-center space-x-1.5">
+                      <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
                       <span>Areas for Improvement</span>
                     </h4>
                     <ul className="space-y-1.5 text-xs text-slate-700">
                       {evaluation.improvements.map((imp, idx) => (
-                        <li key={idx} className="flex items-start space-x-1.5">
-                          <span className="text-amber-500">•</span>
-                          <span>{imp}</span>
+                        <li key={idx} className="flex items-start space-x-2">
+                          <span className="text-amber-500 font-bold shrink-0">•</span>
+                          <span className="leading-relaxed">{imp}</span>
                         </li>
                       ))}
                     </ul>
                   </div>
                 </div>
 
-                {/* Model Answer Blueprint */}
-                <div className="p-5 rounded-xl bg-indigo-50/40 border border-indigo-100">
-                  <h4 className="text-xs font-bold text-indigo-900 uppercase tracking-wider mb-2 flex items-center space-x-1.5">
-                    <Sparkles className="h-4 w-4 text-brand-600" />
-                    <span>Exemplary Model Answer Blueprint</span>
-                  </h4>
-                  <p className="text-xs text-slate-800 leading-relaxed whitespace-pre-wrap">
-                    {evaluation.modelAnswer}
-                  </p>
+                {/* Exemplary Model Answer Blueprint (Structured Section) */}
+                <div className="rounded-2xl border border-slate-200/80 bg-slate-50/60 overflow-hidden">
+                  <button
+                    onClick={() => setBlueprintExpanded(!blueprintExpanded)}
+                    className="w-full p-4 sm:p-5 flex items-center justify-between text-left hover:bg-slate-100/60 transition"
+                  >
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center space-x-1.5">
+                        <Sparkles className="h-4 w-4 text-brand-600" />
+                        <span>Exemplary Answer Blueprint</span>
+                      </h4>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        How a high-scoring candidate response could be structured.
+                      </p>
+                    </div>
+
+                    <div className="flex items-center space-x-1 text-slate-400">
+                      <span className="text-xs font-semibold hidden sm:inline">
+                        {blueprintExpanded ? "Collapse" : "Expand"}
+                      </span>
+                      {blueprintExpanded ? (
+                        <ChevronUp className="h-4 w-4" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4" />
+                      )}
+                    </div>
+                  </button>
+
+                  {blueprintExpanded && (
+                    <div className="p-4 sm:p-5 pt-0 space-y-3">
+                      {modelAnswerSections.map((sec, i) => (
+                        <div
+                          key={i}
+                          className="p-4 rounded-xl bg-white border border-slate-200/70 shadow-2xs space-y-1.5"
+                        >
+                          <div className="flex items-center space-x-2">
+                            <span className="text-[10px] font-extrabold font-mono bg-brand-50 text-brand-700 px-2 py-0.5 rounded border border-brand-200/60">
+                              {sec.step}
+                            </span>
+                            <span className="text-xs font-bold text-slate-800">
+                              {sec.title}
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-700 leading-relaxed whitespace-pre-wrap pl-0 sm:pl-7">
+                            {sec.content}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             )}
