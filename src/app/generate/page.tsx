@@ -4,19 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Navbar } from "@/components/Navbar";
 import { api } from "@/lib/api";
-import {
-  Sparkles,
-  Globe,
-  FileText,
-  Calendar,
-  ArrowRight,
-  AlertCircle,
-  CheckCircle2,
-  Loader2,
-  RefreshCw,
-  Search,
-  ShieldCheck,
-} from "lucide-react";
+import { ArrowRight, AlertCircle, Loader2 } from "lucide-react";
 
 const SAMPLES = [
   {
@@ -166,184 +154,159 @@ export default function GenerateKitPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen bg-slate-50 flex flex-col">
       <Navbar />
 
-      <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 py-8">
-        <div className="mb-6">
+      <main className="flex-1 max-w-3xl w-full mx-auto px-4 sm:px-6 py-8 sm:py-12">
+        {/* Header */}
+        <div className="mb-6 sm:mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
-            Generate Interview Preparation Kit
+            Create interview kit
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Provide the job description and company site. Our research engine crawls their pages, extracts requirements, identifies coverage gaps, and crafts a day-by-day plan.
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+            Generate a personalized preparation plan from a job description.
           </p>
         </div>
 
-        {/* Preset Sample Quick-Loads */}
-        <div className="mb-6 bg-slate-100/70 p-3.5 rounded-xl border border-slate-200">
-          <div className="text-xs font-semibold text-slate-600 mb-2 flex items-center space-x-1.5">
-            <Sparkles className="h-3.5 w-3.5 text-brand-600" />
-            <span>Load Quick Test Samples:</span>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {SAMPLES.map((sample) => (
-              <button
-                key={sample.label}
-                type="button"
-                onClick={() => handleSelectSample(sample)}
-                className="text-xs bg-white hover:bg-slate-50 text-slate-700 font-medium px-3 py-1.5 rounded-lg border border-slate-200 shadow-2xs transition"
-              >
-                {sample.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
+        {/* Error Alert */}
         {error && (
-          <div className="mb-6 p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-sm flex items-start space-x-3">
-            <AlertCircle className="h-5 w-5 text-rose-600 shrink-0 mt-0.5" />
-            <div>
-              <div className="font-semibold">Generation Error</div>
-              <div className="text-xs mt-0.5 text-rose-700">{error}</div>
-            </div>
+          <div
+            role="alert"
+            className="mb-5 p-3.5 rounded-xl bg-rose-50/80 border border-rose-200/70 text-rose-900 text-xs flex items-start space-x-2.5"
+          >
+            <AlertCircle className="h-4 w-4 text-rose-500 shrink-0 mt-0.5" />
+            <p className="font-medium text-rose-900 leading-relaxed">{error}</p>
           </div>
         )}
 
         {isGenerating ? (
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-8 text-center my-8">
-            <div className="inline-flex h-16 w-16 bg-brand-50 text-brand-600 rounded-full items-center justify-center mb-5 animate-pulse">
-              <RefreshCw className="h-8 w-8 animate-spin text-brand-600" />
-            </div>
-
-            <h2 className="text-xl font-bold text-slate-900">
-              Generating Your Prep Kit...
-            </h2>
-            <p className="text-sm text-slate-500 mt-1 max-w-md mx-auto">
-              Please wait while we crawl the company domain, research hiring debriefs, and verify requirement coverage.
-            </p>
-
-            {/* Progress Bar */}
-            <div className="mt-8 max-w-md mx-auto">
-              <div className="flex justify-between text-xs font-semibold text-slate-600 mb-2">
-                <span>{currentStage}</span>
-                <span>{progressPercent}%</span>
-              </div>
-              <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
-                <div
-                  className="bg-brand-600 h-2.5 rounded-full transition-all duration-500"
-                  style={{ width: `${progressPercent}%` }}
-                />
-              </div>
-            </div>
-
-            {/* Deliberate Steps Overview */}
-            <div className="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-3 text-left max-w-xl mx-auto text-xs text-slate-600">
-              <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
-                <div className="font-semibold text-slate-800">1. Web Crawler</div>
-                <div className="text-[11px] text-slate-400">Ranks hiring & about links</div>
-              </div>
-              <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
-                <div className="font-semibold text-slate-800">2. Extraction</div>
-                <div className="text-[11px] text-slate-400">Must vs Nice requirements</div>
-              </div>
-              <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
-                <div className="font-semibold text-slate-800">3. Pass 2 Loop</div>
-                <div className="text-[11px] text-slate-400">Closes coverage gaps</div>
-              </div>
-              <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
-                <div className="font-semibold text-slate-800">4. Arithmetic</div>
-                <div className="text-[11px] text-slate-400">Strict day allocation</div>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 sm:p-8 space-y-6">
-            {/* Job Description Textarea */}
-            <div>
-              <div className="flex justify-between items-center mb-2">
-                <label className="text-sm font-semibold text-slate-900 flex items-center space-x-1.5">
-                  <FileText className="h-4 w-4 text-brand-600" />
-                  <span>Job Description Text</span>
-                </label>
-                <span className="text-xs text-slate-400 font-mono">
-                  {jd.length} characters
-                </span>
-              </div>
-              <textarea
-                required
-                rows={10}
-                value={jd}
-                onChange={(e) => setJd(e.target.value)}
-                placeholder="Paste the full job description text here (responsibilities, required skills, preferred qualifications)..."
-                className="w-full text-sm p-4 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 font-sans leading-relaxed transition"
-              />
-              <p className="text-xs text-slate-400 mt-1.5">
-                Note: Thin descriptions (e.g. 2-line stubs) are handled truthfully without fabricating phantom requirements.
+          /* Polished Generation Progress */
+          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-8 sm:p-12 text-center space-y-4">
+            <Loader2 className="h-7 w-7 text-brand-600 animate-spin mx-auto" />
+            <div className="space-y-1">
+              <h2 className="text-lg font-bold text-slate-900 tracking-tight">
+                Generating your prep kit
+              </h2>
+              <p className="text-xs text-slate-500 font-medium">
+                {currentStage}
               </p>
             </div>
 
-            {/* Company Website & Days Inputs */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-2">
-              <div>
-                <label className="block text-sm font-semibold text-slate-900 mb-2 flex items-center space-x-1.5">
-                  <Globe className="h-4 w-4 text-brand-600" />
-                  <span>Company Website Address</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={companyUrl}
-                  onChange={(e) => setCompanyUrl(e.target.value)}
-                  placeholder="https://company.com or http://localhost:8099/..."
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition"
+            {/* Progress bar */}
+            <div className="pt-2 max-w-sm mx-auto">
+              <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                <div
+                  className="bg-brand-600 h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${progressPercent}%` }}
                 />
-                <p className="text-xs text-slate-400 mt-1.5">
-                  Crawl engine discovers career handbooks and engineering blogs.
-                </p>
               </div>
-
+              <span className="text-[11px] text-slate-400 font-mono mt-1.5 block">
+                {progressPercent}%
+              </span>
+            </div>
+          </div>
+        ) : (
+          /* Form Card */
+          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 sm:p-8 space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Job Description Field */}
               <div>
-                <label className="block text-sm font-semibold text-slate-900 mb-2 flex items-center space-x-1.5">
-                  <Calendar className="h-4 w-4 text-brand-600" />
-                  <span>Days Available Before Interview</span>
-                </label>
-                <div className="flex items-center space-x-3">
-                  <input
-                    type="range"
-                    min={1}
-                    max={60}
-                    value={days}
-                    onChange={(e) => setDays(parseInt(e.target.value, 10))}
-                    className="flex-1 accent-brand-600 cursor-pointer"
-                  />
-                  <span className="font-bold text-base text-brand-700 bg-brand-50 px-3 py-1 rounded-lg border border-brand-200 min-w-[55px] text-center">
-                    {days}d
+                <div className="flex justify-between items-center mb-1.5">
+                  <label
+                    htmlFor="jd"
+                    className="text-xs font-semibold text-slate-700"
+                  >
+                    Job description
+                  </label>
+                  <span className="text-[11px] text-slate-400 font-mono">
+                    {jd.length} chars
                   </span>
                 </div>
-                <p className="text-xs text-slate-400 mt-1.5">
-                  Arithmetic allocation spreads topics across exactly {days} day(s).
-                </p>
+                <textarea
+                  id="jd"
+                  name="jd"
+                  required
+                  rows={8}
+                  value={jd}
+                  onChange={(e) => setJd(e.target.value)}
+                  placeholder="Paste the full job description text here..."
+                  className="w-full text-sm p-3.5 rounded-xl border border-slate-200 bg-white placeholder:text-slate-400 text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 font-sans leading-relaxed transition hover:border-slate-300 resize-y"
+                />
               </div>
-            </div>
 
-            {/* Submit Button */}
-            <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
-              <div className="text-xs text-slate-400 flex items-center space-x-1.5">
-                <ShieldCheck className="h-4 w-4 text-emerald-600" />
-                <span>SSRF Protection & Untrusted Input Isolation Active</span>
+              {/* Company Website & Days (Two-column on desktop, stacked on mobile) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div>
+                  <label
+                    htmlFor="companyUrl"
+                    className="block text-xs font-semibold text-slate-700 mb-1.5"
+                  >
+                    Company website
+                  </label>
+                  <input
+                    id="companyUrl"
+                    name="companyUrl"
+                    type="text"
+                    required
+                    value={companyUrl}
+                    onChange={(e) => setCompanyUrl(e.target.value)}
+                    placeholder="https://company.com"
+                    className="h-11 w-full px-3.5 rounded-xl border border-slate-200 bg-white text-sm text-slate-900 placeholder:text-slate-400 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition"
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="days"
+                    className="block text-xs font-semibold text-slate-700 mb-1.5"
+                  >
+                    Days to prepare
+                  </label>
+                  <div className="h-11 flex items-center space-x-3 px-3.5 rounded-xl border border-slate-200 bg-white">
+                    <input
+                      id="days"
+                      type="range"
+                      min={1}
+                      max={60}
+                      value={days}
+                      onChange={(e) => setDays(parseInt(e.target.value, 10))}
+                      className="flex-1 accent-brand-600 cursor-pointer"
+                    />
+                    <span className="font-semibold text-xs text-brand-700 bg-brand-50 px-2.5 py-1 rounded-lg border border-brand-100 min-w-[40px] text-center">
+                      {days}d
+                    </span>
+                  </div>
+                </div>
               </div>
 
-              <button
-                type="submit"
-                disabled={isGenerating}
-                className="px-6 py-3 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-sm font-semibold shadow-md shadow-brand-600/20 transition flex items-center space-x-2"
-              >
-                <Sparkles className="h-4 w-4" />
-                <span>Start Research & Generate Kit</span>
-                <ArrowRight className="h-4 w-4" />
-              </button>
-            </div>
-          </form>
+              {/* Quick Test Samples (Unobtrusive) */}
+              <div className="pt-1 flex flex-wrap items-center gap-1.5 text-xs">
+                <span className="text-slate-400 text-[11px] mr-1">Quick samples:</span>
+                {SAMPLES.map((sample) => (
+                  <button
+                    key={sample.label}
+                    type="button"
+                    onClick={() => handleSelectSample(sample)}
+                    className="text-[11px] text-slate-600 hover:text-brand-600 hover:bg-slate-50 px-2 py-1 rounded-md border border-slate-200/80 transition-colors"
+                  >
+                    {sample.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Submit Action */}
+              <div className="pt-4 border-t border-slate-100 flex items-center justify-end">
+                <button
+                  type="submit"
+                  disabled={isGenerating}
+                  className="w-full sm:w-auto px-6 py-2.5 bg-brand-600 hover:bg-brand-700 active:bg-brand-800 disabled:opacity-50 text-white rounded-xl text-xs sm:text-sm font-semibold shadow-sm hover:shadow-brand-sm transition-all duration-150 inline-flex items-center justify-center space-x-2"
+                >
+                  <span>Generate Kit</span>
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+              </div>
+            </form>
+          </div>
         )}
       </main>
     </div>
