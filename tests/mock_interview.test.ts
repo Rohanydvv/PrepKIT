@@ -211,4 +211,132 @@ describe("AI Mock Interview Coach Evaluator", () => {
     expect(res.modelAnswer).toContain("Action:");
     expect(res.modelAnswer).toContain("Result:");
   });
+
+  describe("Meaningful Content & Anti-Filler Verification (Quality Gates)", () => {
+    const distSysQuestion = {
+      prompt:
+        "When architecting a distributed system expected to scale horizontally under heavy traffic surges, what strategies do you employ for state management, cache consistency, and failover?",
+      category: "technical",
+      outline:
+        "stateless services, shared session state in Redis, cache-aside with TTLs, database replication, health checks, circuit breakers, idempotent retries, failover",
+    };
+
+    it("TEST 1 — FILLER: Repeated filler ('blah blah...') scores very low", async () => {
+      const res = await evaluateCandidateAnswer(
+        distSysQuestion.prompt,
+        distSysQuestion.category,
+        distSysQuestion.outline,
+        "blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah"
+      );
+
+      expect(res.score).toBeLessThanOrEqual(15);
+      expect(res.rubricScores.depth).toBe(0);
+      expect(res.rubricScores.alignment).toBe(0);
+      expect(res.rubricScores.clarity).toBeLessThanOrEqual(5);
+      expect(res.score).toBe(
+        res.rubricScores.depth +
+          res.rubricScores.structure +
+          res.rubricScores.alignment +
+          res.rubricScores.clarity
+      );
+    });
+
+    it("TEST 2 — EMPTY/UNKNOWN: 'I don\\'t know.' scores very low", async () => {
+      const res = await evaluateCandidateAnswer(
+        distSysQuestion.prompt,
+        distSysQuestion.category,
+        distSysQuestion.outline,
+        "I don't know."
+      );
+
+      expect(res.score).toBeLessThanOrEqual(15);
+      expect(res.rubricScores.depth).toBeLessThanOrEqual(2);
+      expect(res.rubricScores.alignment).toBeLessThanOrEqual(2);
+      expect(res.score).toBe(
+        res.rubricScores.depth +
+          res.rubricScores.structure +
+          res.rubricScores.alignment +
+          res.rubricScores.clarity
+      );
+    });
+
+    it("TEST 3 — IRRELEVANT: Grammatical but completely off-topic answer scores very low in depth & alignment", async () => {
+      const res = await evaluateCandidateAnswer(
+        distSysQuestion.prompt,
+        distSysQuestion.category,
+        distSysQuestion.outline,
+        "I really enjoy playing cricket and watching movies with my friends on weekends."
+      );
+
+      expect(res.score).toBeLessThanOrEqual(15);
+      expect(res.rubricScores.depth).toBe(0);
+      expect(res.rubricScores.alignment).toBe(0);
+      expect(res.score).toBe(
+        res.rubricScores.depth +
+          res.rubricScores.structure +
+          res.rubricScores.alignment +
+          res.rubricScores.clarity
+      );
+    });
+
+    it("TEST 4 — SHORT BUT RELEVANT: Concise answer with rich technical concepts scores substantially higher than filler", async () => {
+      const res = await evaluateCandidateAnswer(
+        distSysQuestion.prompt,
+        distSysQuestion.category,
+        distSysQuestion.outline,
+        "I'd keep services stateless, use Redis for shared state, cache-aside with TTLs, and replicated services with health checks and retries for failover."
+      );
+
+      expect(res.score).toBeGreaterThan(50);
+      expect(res.rubricScores.depth).toBeGreaterThanOrEqual(14);
+      expect(res.rubricScores.alignment).toBeGreaterThanOrEqual(14);
+      expect(res.rubricScores.clarity).toBeGreaterThanOrEqual(18);
+      expect(res.score).toBe(
+        res.rubricScores.depth +
+          res.rubricScores.structure +
+          res.rubricScores.alignment +
+          res.rubricScores.clarity
+      );
+    });
+
+    it("TEST 5 — DETAILED TECHNICAL: Comprehensive architecture explanation scores high", async () => {
+      const res = await evaluateCandidateAnswer(
+        distSysQuestion.prompt,
+        distSysQuestion.category,
+        distSysQuestion.outline,
+        "To handle traffic surges horizontally, I partition architecture into stateless compute and externalized state in Redis Cluster. For cache consistency, we employ the cache-aside pattern with probabilistic early expiration to eliminate cache stampedes, combined with explicit invalidation on writes. For failover, we deploy replicated database primaries with automatic read replica promotion, fronted by Envoy proxies performing active health checks, circuit breaking, and exponential backoff retries with jitter."
+      );
+
+      expect(res.score).toBeGreaterThanOrEqual(70);
+      expect(res.rubricScores.depth).toBeGreaterThanOrEqual(18);
+      expect(res.rubricScores.alignment).toBeGreaterThanOrEqual(18);
+      expect(res.rubricScores.clarity).toBeGreaterThanOrEqual(20);
+      expect(res.score).toBe(
+        res.rubricScores.depth +
+          res.rubricScores.structure +
+          res.rubricScores.alignment +
+          res.rubricScores.clarity
+      );
+    });
+
+    it("TEST 6 — LONG FILLER: Very long answer consisting of repeated filler still scores very low (Length != Quality)", async () => {
+      const longFillerAnswer = Array(60).fill("blah blah blah blah").join(" ");
+      const res = await evaluateCandidateAnswer(
+        distSysQuestion.prompt,
+        distSysQuestion.category,
+        distSysQuestion.outline,
+        longFillerAnswer
+      );
+
+      expect(res.score).toBeLessThanOrEqual(15);
+      expect(res.rubricScores.depth).toBe(0);
+      expect(res.rubricScores.alignment).toBe(0);
+      expect(res.score).toBe(
+        res.rubricScores.depth +
+          res.rubricScores.structure +
+          res.rubricScores.alignment +
+          res.rubricScores.clarity
+      );
+    });
+  });
 });

@@ -77,12 +77,75 @@ const COMMON_STOP_WORDS = new Set([
   "also", "back", "after", "use", "two", "how", "our", "work", "first",
   "well", "way", "even", "new", "want", "because", "any", "these", "give",
   "day", "most", "us", "are", "was", "were", "been", "has", "had", "does",
-  "did", "doing"
+  "did", "doing", "i'd", "we'd", "would", "should", "could"
 ]);
 
 function extractKeywords(text: string): string[] {
   const matches: string[] = text.toLowerCase().match(/\b[a-z0-9_-]{3,}\b/g) || [];
   return Array.from(new Set(matches.filter((w) => !COMMON_STOP_WORDS.has(w))));
+}
+
+/**
+ * Known technical concepts across distributed systems, backend, frontend, and engineering.
+ */
+const TECHNICAL_TERMS_REGEX =
+  /\b(api|apis|rest|graphql|grpc|database|databases|sql|nosql|postgres|postgresql|mysql|redis|memcached|mongodb|dynamodb|kafka|rabbitmq|queue|queues|cache|caching|cache-aside|write-through|write-back|write-behind|invalidation|stampede|latency|throughput|concurrency|multithread|async|synchronous|asynchronous|microservices|monolith|docker|kubernetes|k8s|aws|cloud|ci\/cd|pipeline|index|indexes|indexing|partition|partitioning|sharding|replica|replicas|replication|read replica|acid|cap|pacelc|distributed|stateless|stateful|shared state|session state|load balancer|load balancing|proxy|reverse proxy|nginx|envoy|failover|circuit breaker|circuit breakers|health check|health checks|idempotent|idempotency|rate limit|rate limiting|retry|retries|backoff|exponential backoff|jitter|bulkhead|redundancy|active-active|active-passive|security|auth|jwt|oauth|encryption|tls|ssl|monitoring|metrics|telemetry|tracing|grafana|prometheus|profiling|memory|cpu|gc|garbage collection|algorithm|complexity|state|cluster|sentinel|ttl|lru|eviction|consistent hashing|event-driven|pub\/sub|dead-letter|websocket|http|https|dns|cdn|autoscaling|horizontal scaling|vertical scaling|sla|slo|sli|p95|p99|high availability|disaster recovery|graceful degradation|b-tree|lock|locks|mutex|distributed lock|consensus|raft|paxos)\b/gi;
+
+/**
+ * Checks for repetition, filler words, nonsense, or non-answers.
+ */
+function analyzeTextContent(words: string[], rawAnswer: string) {
+  const totalWords = words.length;
+
+  // 1. Explicit refusal / admission of ignorance
+  const isIgnorance =
+    /\b(i don'?t know|no idea|pass|not sure|dunno|can'?t answer|no comment|idk|nothing|have no clue|unanswered)\b/i.test(
+      rawAnswer
+    ) && totalWords <= 12;
+
+  if (totalWords === 0) {
+    return { isFillerOrNonsense: true, isIgnorance: false, isTrivial: true, ttr: 0 };
+  }
+
+  // 2. Vocabulary Diversity (Type-Token Ratio)
+  const uniqueWords = new Set(words);
+  const ttr = uniqueWords.size / totalWords;
+
+  // 3. Max Token Frequency Dominance
+  const freq: Record<string, number> = {};
+  let maxFreq = 0;
+  for (const w of words) {
+    freq[w] = (freq[w] || 0) + 1;
+    if (freq[w] > maxFreq) maxFreq = freq[w];
+  }
+  const maxFreqRatio = maxFreq / totalWords;
+
+  // 4. Repeated Filler Patterns
+  const hasFillerPattern =
+    /\b(blah(\s+blah)+|yes(\s+yes){2,}|no(\s+no){2,}|haha(\s+haha)+|lol(\s+lol)+|test(\s+test){2,}|word(\s+word)+)\b/i.test(
+      rawAnswer
+    );
+
+  // 5. Extreme repetition or low diversity check
+  const isRepetitive =
+    (totalWords >= 8 && ttr < 0.28) ||
+    (totalWords >= 6 && maxFreqRatio > 0.40) ||
+    hasFillerPattern;
+
+  // 6. Gibberish / keyboard smash (e.g., "asdfghjkl", "qwertyuiop")
+  const isGibberish =
+    /\b([bcdfghjklmnpqrstvwxyz]{6,}|asdf\w*|qwerty\w*|zxcv\w*)\b/i.test(rawAnswer) &&
+    uniqueWords.size < 4;
+
+  const isFillerOrNonsense = isRepetitive || isGibberish || totalWords < 4;
+
+  return {
+    isFillerOrNonsense,
+    isIgnorance,
+    isTrivial: totalWords < 4,
+    ttr,
+    maxFreqRatio,
+  };
 }
 
 /**
@@ -128,85 +191,148 @@ export function evaluateCandidateAnswerOffline(
   const { category, questionPrompt, answerOutline, candidateAnswer } = input;
   const answer = (candidateAnswer || "").trim();
 
-  // ---------------------------------------------------------------------------
-  // Tier A: Non-answers, extreme brevity, or explicit admission of ignorance
-  // ---------------------------------------------------------------------------
-  const isIgnorance =
-    /\b(i don'?t know|no idea|pass|not sure|dunno|can'?t answer|no comment|idk|nothing)\b/i.test(
-      answer
-    ) && answer.split(/\s+/).length <= 8;
-
   const words: string[] = answer.toLowerCase().match(/\b[a-z0-9_-]+\b/g) || [];
   const wordCount = words.length;
 
-  if (wordCount < 4 || isIgnorance) {
-    const depth = 2;
-    const structure = 2;
-    const alignment = 2;
-    const clarity = Math.min(5, Math.max(1, wordCount * 2));
-    const score = depth + structure + alignment + clarity;
+  const { isFillerOrNonsense, isIgnorance, isTrivial } = analyzeTextContent(words, answer);
 
-    return {
-      score,
-      rubricScores: { depth, structure, alignment, clarity },
-      strengths: [
-        "Transparently acknowledged knowledge boundary rather than inventing incorrect facts.",
-      ],
-      improvements: [
-        "Attempt to answer by breaking down the question into first principles or adjacent concepts you know.",
-        `Review the core concepts expected for this question: ${answerOutline || "foundational software engineering principles"}.`,
-        "Structure an educated hypothesis explaining how you would research or test the solution in production.",
-      ],
-      modelAnswer: generateModelAnswer(category, questionPrompt, answerOutline),
-    };
+  // ---------------------------------------------------------------------------
+  // Concept Extraction & Alignment Analysis
+  // ---------------------------------------------------------------------------
+  const rawTechKeywords = answer.match(TECHNICAL_TERMS_REGEX) || [];
+  const uniqueTechTerms = Array.from(new Set(rawTechKeywords.map((k) => k.toLowerCase())));
+  const uniqueTechCount = uniqueTechTerms.length;
+
+  const expectedKeywords = extractKeywords(`${questionPrompt} ${answerOutline}`);
+  const matchedKeywords: string[] = [];
+  const missingKeywords: string[] = [];
+
+  for (const kw of expectedKeywords) {
+    if (words.includes(kw)) {
+      matchedKeywords.push(kw);
+    } else {
+      missingKeywords.push(kw);
+    }
+  }
+
+  const matchRatio =
+    expectedKeywords.length > 0 ? matchedKeywords.length / expectedKeywords.length : 0.5;
+
+  // Detect off-topic / completely irrelevant content (e.g., talks about cricket, movies, food)
+  const isOffTopic =
+    wordCount >= 10 &&
+    uniqueTechCount === 0 &&
+    matchedKeywords.length === 0 &&
+    category !== "behavioural";
+
+  // ---------------------------------------------------------------------------
+  // QUALITY GATE: Nonsense, Extreme Filler, Ignorance, or Irrelevant
+  // ---------------------------------------------------------------------------
+  if (isTrivial || isIgnorance || isFillerOrNonsense || isOffTopic) {
+    let depth = 0;
+    let structure = 1;
+    let alignment = 0;
+    let clarity = 2;
+
+    if (isIgnorance) {
+      depth = 1;
+      structure = 1;
+      alignment = 1;
+      clarity = 4;
+      return {
+        score: depth + structure + alignment + clarity, // 7
+        rubricScores: { depth, structure, alignment, clarity },
+        strengths: [
+          "Transparently acknowledged knowledge boundary rather than guessing or fabricating details.",
+        ],
+        improvements: [
+          "Formulate an attempt by breaking down the question into first principles or adjacent concepts you know.",
+          `Review the expected foundational concepts: ${answerOutline || "system architecture and design principles"}.`,
+          "Structure an educated hypothesis explaining how you would research or test the solution in production.",
+        ],
+        modelAnswer: generateModelAnswer(category, questionPrompt, answerOutline),
+      };
+    }
+
+    if (isFillerOrNonsense || isTrivial) {
+      depth = 0;
+      structure = 1;
+      alignment = 0;
+      clarity = 2;
+      return {
+        score: depth + structure + alignment + clarity, // 3
+        rubricScores: { depth, structure, alignment, clarity },
+        strengths: [
+          "Input was received, but lacked substantive technical content.",
+        ],
+        improvements: [
+          "Replace repetitive or placeholder words with actual engineering strategies and solutions.",
+          "Address the core problem statement directly with concrete mechanisms.",
+          `Discuss key concepts relevant to this question: ${answerOutline || "architecture, tools, and trade-offs"}.`,
+        ],
+        modelAnswer: generateModelAnswer(category, questionPrompt, answerOutline),
+      };
+    }
+
+    if (isOffTopic) {
+      depth = 0;
+      structure = 3;
+      alignment = 0;
+      clarity = 5;
+      return {
+        score: depth + structure + alignment + clarity, // 8
+        rubricScores: { depth, structure, alignment, clarity },
+        strengths: [
+          "Delivered grammatically coherent sentences.",
+        ],
+        improvements: [
+          "Directly address the specific technical interview question asked rather than unrelated topics.",
+          `Incorporate the expected core concepts: ${answerOutline || "key domain mechanisms"}.`,
+          "Focus answers strictly on software engineering, architecture, and professional experience.",
+        ],
+        modelAnswer: generateModelAnswer(category, questionPrompt, answerOutline),
+      };
+    }
   }
 
   // ---------------------------------------------------------------------------
   // Rubric 1: Technical Depth (0 - 25)
+  // Driven primarily by technical concepts, trade-offs, and metrics — NEVER length alone
   // ---------------------------------------------------------------------------
-  let depth = 4;
-  if (wordCount >= 15) depth = 8;
-  if (wordCount >= 40) depth = 12;
-  if (wordCount >= 80) depth = 15;
-  if (wordCount >= 140) depth = 18;
-  if (wordCount >= 220) depth = 20;
+  let depth = 0;
 
-  // Technical keyword detection
-  const techKeywords: string[] =
-    answer.match(
-      /\b(api|rest|graphql|grpc|database|sql|nosql|postgres|mysql|redis|mongodb|kafka|rabbitmq|queue|cache|caching|latency|throughput|concurrency|multithread|async|promise|microservices|monolith|docker|kubernetes|aws|cloud|ci\/cd|pipeline|index|partition|sharding|replica|replication|acid|cap|distributed|load balancer|proxy|nginx|failover|circuit breaker|idempotent|idempotency|rate limit|security|auth|jwt|oauth|encryption|tls|ssl|monitoring|metrics|grafana|prometheus|profiling|memory|cpu|gc|algorithm|complexity|state|cluster|sentinel|ttl|lru)\b/gi
-    ) || [];
-  const uniqueTechCount = new Set(techKeywords.map((k) => k.toLowerCase())).size;
+  // Base score strictly anchored on unique technical concept density
+  if (uniqueTechCount >= 8) depth = 19;
+  else if (uniqueTechCount >= 6) depth = 16;
+  else if (uniqueTechCount >= 4) depth = 13;
+  else if (uniqueTechCount >= 2) depth = 9;
+  else if (uniqueTechCount >= 1) depth = 5;
+  else depth = category === "behavioural" ? 4 : 1;
 
-  if (uniqueTechCount >= 6) depth += 4;
-  else if (uniqueTechCount >= 4) depth += 3;
-  else if (uniqueTechCount >= 2) depth += 2;
-  else if (uniqueTechCount >= 1) depth += 1;
-
-  // Architectural trade-offs & nuance
+  // Architectural trade-offs & nuance (only awarded if technical concepts exist)
   const hasTradeoffs =
-    /\b(trade-off|tradeoff|trade-offs|tradeoffs|versus|vs|whereas|however|downside|advantage|drawback|compromise|mitigate|mitigation|bottleneck|alternatively|in contrast|overhead|decouple|failover)\b/i.test(
+    /\b(trade-off|tradeoff|trade-offs|tradeoffs|versus|vs|whereas|however|downside|advantage|drawback|compromise|mitigate|mitigation|bottleneck|alternatively|in contrast|overhead|decouple|eventual consistency|strong consistency)\b/i.test(
       answer
     );
-  if (hasTradeoffs) depth += 2;
+  if (hasTradeoffs && uniqueTechCount >= 1) depth += 2;
 
-  // Quantified metrics & concrete scale
+  // Quantified metrics & concrete scale (only awarded if technical concepts exist)
   const hasMetrics =
     /\b\d+(\.\d+)?\s*(ms|s|seconds|minutes|%|percent|rps|qps|k|million|gb|mb|tb|ops|queries|users|req\/s)\b/i.test(
       answer
     ) || /\b(p95|p99|sla|slo|sli)\b/i.test(answer) || /\b\d+%\b/.test(answer);
-  if (hasMetrics) depth += 2;
+  if (hasMetrics && uniqueTechCount >= 1) depth += 2;
+
+  // Substantive explanation bonus: rewarding answers that explain mechanisms rather than pure keyword dumps
+  if (uniqueTechCount >= 3 && wordCount >= 35) depth += 2;
 
   depth = Math.min(25, Math.max(0, depth));
 
   // ---------------------------------------------------------------------------
   // Rubric 2: Structure & Method (0 - 25)
+  // Evaluates logical decomposition and methodology — NOT raw word count
   // ---------------------------------------------------------------------------
-  let structure = 5;
-  if (wordCount >= 20) structure = 9;
-  if (wordCount >= 50) structure = 13;
-  if (wordCount >= 100) structure = 16;
-  if (wordCount >= 160) structure = 18;
+  let structure = 4;
 
   // Structural markers (lists, paragraphs, numbered points)
   const hasFormatting = /(?:^|\n)\s*(?:\d+[\.\)]|[-*•])\s+/m.test(answer);
@@ -238,69 +364,81 @@ export function evaluateCandidateAnswerOffline(
     );
 
   const starCount = [hasSituation, hasTask, hasAction, hasResult].filter(Boolean).length;
-  if (starCount >= 3) structure += 4;
-  else if (starCount >= 2) structure += 2;
+
+  if (category === "behavioural") {
+    if (starCount >= 3) structure += 12;
+    else if (starCount >= 2) structure += 7;
+    else if (starCount >= 1) structure += 4;
+  } else {
+    // Technical questions: rewards structured decomposition (approach -> implementation -> trade-offs)
+    if (starCount >= 2) structure += 4;
+    if (uniqueTechCount >= 4 && hasConnectors) structure += 6;
+    else if (uniqueTechCount >= 2) structure += 4;
+    else if (wordCount >= 20) structure += 2;
+  }
 
   structure = Math.min(25, Math.max(0, structure));
 
   // ---------------------------------------------------------------------------
   // Rubric 3: Company & Question Alignment (0 - 25)
+  // Strictly based on semantic overlap with the prompt and expected key points
   // ---------------------------------------------------------------------------
-  const expectedKeywords = extractKeywords(`${questionPrompt} ${answerOutline}`);
-  let matchedKeywordsCount = 0;
-  const matchedKeywords: string[] = [];
-  const missingKeywords: string[] = [];
+  let alignment = 0;
 
-  for (const kw of expectedKeywords) {
-    if (words.includes(kw)) {
-      matchedKeywordsCount++;
-      matchedKeywords.push(kw);
-    } else {
-      missingKeywords.push(kw);
-    }
-  }
+  if (matchRatio >= 0.60) alignment = 22;
+  else if (matchRatio >= 0.40) alignment = 18;
+  else if (matchRatio >= 0.25) alignment = 14;
+  else if (matchRatio >= 0.12) alignment = 10;
+  else if (matchedKeywords.length >= 1) alignment = 6;
+  else alignment = 2; // Very minimal overlap
 
-  const matchRatio =
-    expectedKeywords.length > 0 ? matchedKeywordsCount / expectedKeywords.length : 0.5;
-
-  let alignment = 6;
-  if (matchRatio >= 0.65) alignment = 23;
-  else if (matchRatio >= 0.45) alignment = 19;
-  else if (matchRatio >= 0.25) alignment = 15;
-  else if (matchRatio >= 0.1) alignment = 11;
-  else if (wordCount >= 30) alignment = 9;
-
-  // Relevance check: check if prompt terms appear in answer
+  // Direct question prompt term reinforcement
   const promptKeywords = extractKeywords(questionPrompt);
   const hasDirectPromptWord = promptKeywords.some((pk) => words.includes(pk));
   if (hasDirectPromptWord) alignment += 2;
+
+  // Category intent alignment
+  if (category === "behavioural" && starCount >= 1) alignment += 1;
+  if ((category === "technical" || category === "system-design") && uniqueTechCount >= 2) {
+    alignment += 1;
+  }
 
   alignment = Math.min(25, Math.max(0, alignment));
 
   // ---------------------------------------------------------------------------
   // Rubric 4: Delivery & Clarity (0 - 25)
+  // Evaluates conciseness, readability, and vocabulary diversity — penalizes filler
   // ---------------------------------------------------------------------------
-  let clarity = 8;
-  if (wordCount >= 20 && wordCount < 50) clarity = 13;
-  else if (wordCount >= 50 && wordCount <= 280) clarity = 19;
-  else if (wordCount > 280 && wordCount <= 450) clarity = 21;
-  else if (wordCount > 450) clarity = 17; // Slight deduction for overly verbose answer
+  let clarity = 10;
 
-  // Average words per sentence
+  // Reward concise, high-density answers (20 - 250 words that are on-topic)
+  if (wordCount >= 20 && wordCount <= 60 && uniqueTechCount >= 3) {
+    clarity = 18; // Crisp, direct, information-dense answer!
+  } else if (wordCount > 60 && wordCount <= 280) {
+    clarity = 20;
+  } else if (wordCount > 280 && wordCount <= 450) {
+    clarity = 18;
+  } else if (wordCount > 450) {
+    clarity = 15; // Penalty for overly verbose rambling
+  } else if (wordCount < 20) {
+    clarity = 12; // Brief
+  }
+
+  // Sentence structure and readability
   const sentences = answer.split(/[.!?]+/).filter((s) => s.trim().length > 3);
   const avgWordsPerSentence = sentences.length > 0 ? wordCount / sentences.length : wordCount;
   if (avgWordsPerSentence >= 10 && avgWordsPerSentence <= 26) {
     clarity += 2;
   } else if (avgWordsPerSentence > 45) {
-    clarity -= 2; // Run-on sentences
+    clarity -= 3; // Long run-on sentences
   }
 
   // Filler words deduction
   const fillerMatches: string[] =
     answer.match(/\b(like|um|uh|you know|basically|sort of|kind of|stuff like that)\b/gi) || [];
-  if (fillerMatches.length >= 4) clarity -= 3;
-  else if (fillerMatches.length >= 2) clarity -= 1;
-  else if (fillerMatches.length === 0 && wordCount >= 30) clarity += 2;
+  if (fillerMatches.length >= 4) clarity -= 4;
+  else if (fillerMatches.length >= 2) clarity -= 2;
+  else if (fillerMatches.length === 0 && wordCount >= 20) clarity += 2;
 
   clarity = Math.min(25, Math.max(0, clarity));
 
@@ -314,17 +452,13 @@ export function evaluateCandidateAnswerOffline(
   const improvements: string[] = [];
 
   // Strengths
-  if (depth >= 18) {
+  if (depth >= 16) {
     strengths.push(
-      "Demonstrated strong technical depth with concrete implementation details and architectural trade-offs."
+      `Demonstrated strong technical depth citing key mechanisms: ${uniqueTechTerms.slice(0, 3).join(", ")}.`
     );
   } else if (uniqueTechCount >= 2) {
     strengths.push(
-      `Referenced relevant technical concepts including: ${Array.from(
-        new Set(techKeywords.map((k) => k.toLowerCase()))
-      )
-        .slice(0, 3)
-        .join(", ")}.`
+      `Referenced relevant technical concepts including: ${uniqueTechTerms.slice(0, 3).join(", ")}.`
     );
   }
 
@@ -334,7 +468,7 @@ export function evaluateCandidateAnswerOffline(
     );
   }
 
-  if (starCount >= 2 || hasFormatting) {
+  if (structure >= 16) {
     strengths.push(
       category === "behavioural"
         ? "Effectively followed the STAR framework to clearly connect actions with measurable outcomes."
@@ -342,7 +476,7 @@ export function evaluateCandidateAnswerOffline(
     );
   }
 
-  if (alignment >= 18) {
+  if (alignment >= 16) {
     strengths.push("Directly answered the core question and aligned closely with expected key points.");
   }
 
@@ -351,21 +485,17 @@ export function evaluateCandidateAnswerOffline(
   }
 
   if (strengths.length === 0) {
-    strengths.push(
-      wordCount >= 25
-        ? "Engaged with the interview prompt and provided a foundational starting point."
-        : "Provided a concise initial response."
-    );
+    strengths.push("Engaged with the interview prompt and provided a foundational response.");
   }
 
   // Improvements
-  if (depth < 16) {
+  if (depth < 15) {
     improvements.push(
       "Deepen technical specifics by naming concrete technologies, algorithms, and failure recovery mechanisms."
     );
   }
 
-  if (!hasMetrics && wordCount >= 25) {
+  if (!hasMetrics && wordCount >= 30) {
     improvements.push(
       "Incorporate measurable outcomes or quantitative metrics (e.g. latency, throughput, scale, or percentage gains)."
     );
@@ -377,7 +507,7 @@ export function evaluateCandidateAnswerOffline(
     );
   }
 
-  if (structure < 16) {
+  if (structure < 15) {
     improvements.push(
       category === "behavioural"
         ? "Organize the story using Situation-Task-Action-Result (STAR) to make your personal contribution clear."
@@ -385,7 +515,7 @@ export function evaluateCandidateAnswerOffline(
     );
   }
 
-  if (alignment < 16 && missingKeywords.length > 0) {
+  if (alignment < 15 && missingKeywords.length > 0) {
     improvements.push(
       `Address expected key points more directly, particularly: ${missingKeywords
         .slice(0, 3)
@@ -393,7 +523,7 @@ export function evaluateCandidateAnswerOffline(
     );
   }
 
-  if (wordCount < 40) {
+  if (wordCount < 40 && uniqueTechCount < 4) {
     improvements.push(
       "Expand the response with more situational context and specific implementation steps."
     );
