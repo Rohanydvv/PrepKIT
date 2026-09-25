@@ -16,7 +16,7 @@ import {
   loginUser,
   AuthenticatedRequest,
 } from "./auth.js";
-import { createRateLimiter } from "./rateLimiter.js";
+import { createRateLimiter, getClientIp } from "./rateLimiter.js";
 import { generateInterviewPrepKit } from "../core/pipeline.js";
 import { generateCompanyBrief } from "../core/generation/briefGenerator.js";
 import { generateInitialQuestionBank } from "../core/generation/questionGenerator.js";
@@ -38,17 +38,18 @@ app.use(cookieParser());
 app.use(express.json({ limit: "5mb" }));
 
 // Rate limiter for authentication routes (login, signup, register)
-// 30 requests per 15 minutes per client IP
+// 30 requests per 15 minutes per client IP per route
 const authRateLimiter = createRateLimiter({
   maxRequests: 30,
   windowMs: 15 * 60 * 1000,
-  message: "Too many authentication attempts. Please wait a few moments and try again.",
+  message: "Too many attempts. Please wait a moment and try again.",
+  keyGenerator: (req) => `${getClientIp(req)}:${req.baseUrl || req.path || "auth"}`,
 });
 
 // ---------------------------------------------------------------------------
 // Health & Diagnostic Endpoint
 // ---------------------------------------------------------------------------
-app.get("/api/health", (_req, res) => {
+app.get("/api/health", (req, res) => {
   const isMongo = isUsingMongoDB();
   const persistentRequired = isPersistentDbRequired();
 
@@ -62,6 +63,10 @@ app.get("/api/health", (_req, res) => {
     status: healthStatus,
     timestamp: new Date().toISOString(),
     version: "1.0.0",
+    client: {
+      ip: getClientIp(req),
+      reqIp: req.ip,
+    },
     database: {
       provider: isMongo ? "mongodb" : "embedded",
       connected: isMongo,

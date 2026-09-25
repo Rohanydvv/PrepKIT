@@ -26,10 +26,15 @@ export function isTransientError(err: unknown): boolean {
   if (!err) return false;
 
   if (err instanceof ApiError) {
+    if (err.status === 429) return false;
     return err.isTransient;
   }
 
   const anyErr = err as { status?: number; message?: string };
+  if (anyErr.status === 429) {
+    return false;
+  }
+
   if (
     anyErr.status === 0 ||
     anyErr.status === 408 ||
@@ -233,6 +238,20 @@ export async function fetchJson<T>(url: string, options: FetchJsonOptions = {}):
       }
       return result;
     } catch (err: any) {
+      // Fast abort: Never retry 429 rate limit errors or non-transient errors
+      if (err?.status === 429 || (err instanceof ApiError && err.status === 429)) {
+        if (attempt > 0 && onRetry) {
+          onRetry({
+            attempt: 0,
+            maxAttempts: maxRetries,
+            delayMs: 0,
+            isRetrying: false,
+            message: "",
+          });
+        }
+        throw err;
+      }
+
       if (attempt < maxRetries && isTransientError(err)) {
         attempt++;
         const delayMs = retryDelays[attempt - 1] ?? 10000;
@@ -343,8 +362,9 @@ export const api = {
       try {
         return await this.login("demo@prepkit.io", "prepkitdemo2026", options);
       } catch (err: any) {
-        // Only attempt signup if the demo user does not exist (401); do not signup on network/server errors
-        if (!isTransientError(err)) {
+        // Only attempt signup if the demo user does not exist yet (401);
+        // Never attempt signup on rate limits (429), validation errors, or server cold starts
+        if (err?.status === 401) {
           return await this.signup("demo@prepkit.io", "prepkitdemo2026", options);
         }
         throw err;

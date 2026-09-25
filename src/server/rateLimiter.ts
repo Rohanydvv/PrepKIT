@@ -9,17 +9,53 @@ export interface RateLimiterOptions {
   maxRequests: number;
   windowMs: number;
   message?: string;
+  keyGenerator?: (req: Request) => string;
+}
+
+/**
+ * Extracts the real client IP address across direct connections, Render, Cloudflare, and reverse proxies.
+ */
+export function getClientIp(req: Request): string {
+  // 1. If Cloudflare connecting IP is present and valid
+  const cfIp = req.headers["cf-connecting-ip"];
+  if (cfIp && typeof cfIp === "string" && cfIp.trim()) {
+    return cfIp.trim();
+  }
+
+  // 2. Standard X-Forwarded-For: Leftmost entry is the client IP
+  const forwarded = req.headers["x-forwarded-for"];
+  if (forwarded) {
+    const rawList = Array.isArray(forwarded) ? forwarded.join(",") : forwarded;
+    const firstIp = rawList.split(",")[0]?.trim();
+    if (firstIp && firstIp !== "unknown") {
+      return firstIp;
+    }
+  }
+
+  // 3. X-Real-IP
+  const realIp = req.headers["x-real-ip"];
+  if (realIp && typeof realIp === "string" && realIp.trim()) {
+    return realIp.trim();
+  }
+
+  // 4. Express req.ip (when trust proxy is enabled)
+  if (req.ip && req.ip !== "unknown") {
+    return req.ip;
+  }
+
+  // 5. Socket remote address fallback
+  return req.socket?.remoteAddress || "127.0.0.1";
 }
 
 /**
  * Lightweight, zero-dependency in-memory sliding window rate limiter.
- * Automatically respects X-Forwarded-For when 'trust proxy' is enabled on Express.
+ * Automatically respects proxy headers and isolates rate limits per client IP and endpoint.
  */
 export function createRateLimiter(options: RateLimiterOptions) {
-  const { maxRequests, windowMs, message } = options;
+  const { maxRequests, windowMs, message, keyGenerator } = options;
   const store = new Map<string, RateLimitRecord>();
 
-  // Cleanup expired entries every 5 minutes to prevent memory leaks
+  // Cleanup expired entries periodically to prevent memory leaks
   const cleanupInterval = setInterval(() => {
     const now = Date.now();
     for (const [key, record] of store.entries()) {
@@ -27,7 +63,7 @@ export function createRateLimiter(options: RateLimiterOptions) {
         store.delete(key);
       }
     }
-  }, 5 * 60 * 1000);
+  }, Math.min(windowMs, 5 * 60 * 1000));
   cleanupInterval.unref();
 
   return (req: Request, res: Response, next: NextFunction): void => {
@@ -36,19 +72,14 @@ export function createRateLimiter(options: RateLimiterOptions) {
       return next();
     }
 
-    // Determine client IP
-    const clientIp = (
-      (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() ||
-      req.ip ||
-      req.socket.remoteAddress ||
-      "unknown"
-    );
+    const clientIp = getClientIp(req);
+    const key = keyGenerator ? keyGenerator(req) : clientIp;
 
     const now = Date.now();
-    const record = store.get(clientIp);
+    const record = store.get(key);
 
     if (!record || now > record.resetTime) {
-      store.set(clientIp, {
+      store.set(key, {
         count: 1,
         resetTime: now + windowMs,
       });
@@ -62,7 +93,7 @@ export function createRateLimiter(options: RateLimiterOptions) {
         error: "TOO_MANY_REQUESTS",
         message:
           message ||
-          "Too many authentication attempts. Please wait a few moments and try again.",
+          "Too many attempts. Please wait a moment and try again.",
         retryAfter: retryAfterSeconds,
       });
       return;
