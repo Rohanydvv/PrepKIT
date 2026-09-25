@@ -157,7 +157,7 @@ export default function GenerateKitPage() {
     <div className="min-h-screen bg-slate-50 flex flex-col">
       <Navbar />
 
-      <main className="flex-1 max-w-3xl w-full mx-auto px-4 sm:px-6 py-8 sm:py-12">
+      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         {/* Header */}
         <div className="mb-6 sm:mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
@@ -207,11 +207,11 @@ export default function GenerateKitPage() {
           </div>
         ) : (
           /* Form Card */
-          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 sm:p-8 space-y-6">
+          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 sm:p-8 lg:p-10 space-y-6">
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Job Description Field */}
               <div>
-                <div className="flex justify-between items-center mb-1.5">
+                <div className="flex justify-between items-center mb-2">
                   <label
                     htmlFor="jd"
                     className="text-xs font-semibold text-slate-700"
@@ -234,12 +234,12 @@ export default function GenerateKitPage() {
                 />
               </div>
 
-              {/* Company Website & Days (Two-column on desktop, stacked on mobile) */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              {/* Company Website & Days (Two balanced columns) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label
                     htmlFor="companyUrl"
-                    className="block text-xs font-semibold text-slate-700 mb-1.5"
+                    className="block text-xs font-semibold text-slate-700 mb-2"
                   >
                     Company website
                   </label>
@@ -258,7 +258,7 @@ export default function GenerateKitPage() {
                 <div>
                   <label
                     htmlFor="days"
-                    className="block text-xs font-semibold text-slate-700 mb-1.5"
+                    className="block text-xs font-semibold text-slate-700 mb-2"
                   >
                     Days to prepare
                   </label>
@@ -279,7 +279,7 @@ export default function GenerateKitPage() {
                 </div>
               </div>
 
-              {/* Quick Test Samples (Unobtrusive) */}
+              {/* Quick Test Samples (Unobtrusive & Visually Secondary) */}
               <div className="pt-1 flex flex-wrap items-center gap-1.5 text-xs">
                 <span className="text-slate-400 text-[11px] mr-1">Quick samples:</span>
                 {SAMPLES.map((sample) => (
@@ -294,7 +294,7 @@ export default function GenerateKitPage() {
                 ))}
               </div>
 
-              {/* Submit Action */}
+              {/* Submit Action (Aligned bottom-right) */}
               <div className="pt-4 border-t border-slate-100 flex items-center justify-end">
                 <button
                   type="submit"
