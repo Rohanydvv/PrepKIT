@@ -207,5 +207,78 @@ describe("Frontend Cold-Start Retry & Resilience Handling", () => {
       expect(callCount).toBe(2);
       expect(result.status).toBe("ok");
     });
+
+    it("retries on Render edge router hibernation 429 and succeeds once backend container wakes up", async () => {
+      let callCount = 0;
+      const retryEvents: RetryState[] = [];
+
+      globalThis.fetch = vi.fn().mockImplementation(async () => {
+        callCount++;
+        if (callCount === 1) {
+          // Render edge proxy responds with 429 hibernate-rate-limited plain text while backend spins up
+          return new Response("Too Many Requests", {
+            status: 429,
+            headers: {
+              "Content-Type": "text/plain",
+              "x-render-routing": "hibernate-rate-limited",
+            },
+          });
+        }
+        // Backend has spun up successfully
+        return new Response(JSON.stringify({ user: { id: "usr_hib", email: "demo@prepkit.io" }, token: "jwt_wake" }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      });
+
+      const result = await fetchJson<{ user: { id: string; email: string }; token: string }>("/api/auth/login", {
+        method: "POST",
+        retry: true,
+        maxRetries: 3,
+        retryDelays: [5, 5, 5],
+        onRetry: (state) => {
+          retryEvents.push({ ...state });
+        },
+      });
+
+      expect(callCount).toBe(2);
+      expect(result.user.email).toBe("demo@prepkit.io");
+      expect(result.token).toBe("jwt_wake");
+      expect(retryEvents.length).toBeGreaterThanOrEqual(1);
+      expect(retryEvents[0].isRetrying).toBe(true);
+      expect(retryEvents[0].message).toContain("Connecting to PrepKIT...");
+    });
+
+    it("does NOT retry real backend application 429 rate limit (TOO_MANY_REQUESTS) and fails fast", async () => {
+      let callCount = 0;
+      const onRetry = vi.fn();
+
+      globalThis.fetch = vi.fn().mockImplementation(async () => {
+        callCount++;
+        return new Response(
+          JSON.stringify({
+            error: "TOO_MANY_REQUESTS",
+            message: "Too many attempts. Please wait a moment and try again.",
+            retryAfter: 60,
+          }),
+          {
+            status: 429,
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+      });
+
+      await expect(
+        fetchJson("/api/auth/login", {
+          method: "POST",
+          retry: true,
+          retryDelays: [5, 5],
+          onRetry,
+        })
+      ).rejects.toThrow("Too many attempts. Please wait a moment and try again.");
+
+      expect(callCount).toBe(1);
+      expect(onRetry).not.toHaveBeenCalled();
+    });
   });
 });

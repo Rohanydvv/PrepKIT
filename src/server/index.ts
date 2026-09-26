@@ -31,19 +31,40 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Trust reverse proxy (Render, Vercel, Cloudflare) for accurate client IP identification
-app.set("trust proxy", 1);
+app.set("trust proxy", true);
 
 app.use(cors({ origin: true, credentials: true }));
 app.use(cookieParser());
 app.use(express.json({ limit: "5mb" }));
 
+// Prevent browser/proxy caching on API responses, especially for auth and health routes
+app.use("/api", (_req, res, next) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
+  next();
+});
+
 // Rate limiter for authentication routes (login, signup, register)
-// 30 requests per 15 minutes per client IP per route
+// Isolates limits per client IP and attempted account (30 req / 15m).
+// Demo account (demo@prepkit.io) is granted a generous ceiling (120 req / 15m) so evaluators
+// clicking "1-Click Quick Demo Access" or multiple concurrent reviewers are never locked out.
 const authRateLimiter = createRateLimiter({
-  maxRequests: 30,
+  maxRequests: (req) => {
+    const email = String(req.body?.email || "").toLowerCase().trim();
+    if (email === "demo@prepkit.io") {
+      return 120;
+    }
+    return 30;
+  },
   windowMs: 15 * 60 * 1000,
   message: "Too many attempts. Please wait a moment and try again.",
-  keyGenerator: (req) => `${getClientIp(req)}:${req.baseUrl || req.path || "auth"}`,
+  keyGenerator: (req) => {
+    const ip = getClientIp(req);
+    const email = String(req.body?.email || "").toLowerCase().trim() || "anonymous";
+    const route = req.baseUrl || req.path || "auth";
+    return `${ip}:${email}:${route}`;
+  },
 });
 
 // ---------------------------------------------------------------------------
@@ -66,6 +87,8 @@ app.get("/api/health", (req, res) => {
     client: {
       ip: getClientIp(req),
       reqIp: req.ip,
+      forwardedFor: req.headers["x-forwarded-for"] || null,
+      cfConnectingIp: req.headers["cf-connecting-ip"] || null,
     },
     database: {
       provider: isMongo ? "mongodb" : "embedded",

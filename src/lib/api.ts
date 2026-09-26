@@ -7,30 +7,36 @@ export class ApiError extends Error {
   data?: any;
   isTransient: boolean;
 
-  constructor(message: string, status: number, data?: any) {
+  constructor(message: string, status: number, data?: any, isTransient?: boolean) {
     super(message);
     this.name = "ApiError";
     this.status = status;
     this.data = data;
     // Transient errors indicating server sleep, boot/cold-start, proxy buffering, or temporary timeout
-    this.isTransient = status === 0 || status === 408 || status === 502 || status === 503 || status === 504;
+    this.isTransient =
+      typeof isTransient === "boolean"
+        ? isTransient
+        : status === 0 || status === 408 || status === 502 || status === 503 || status === 504;
   }
 }
 
 /**
  * Determines whether an error is transient and should trigger bounded automatic retry.
- * Returns true for network failures, 502, 503, 504, 408.
- * Returns false for 400, 401, 403, 404, 409, 429, and application validation errors.
+ * Returns true for network failures, 502, 503, 504, 408, and platform cold-start/hibernation rate limits.
+ * Returns false for 400, 401, 403, 404, 409, and real application rate limits (TOO_MANY_REQUESTS).
  */
 export function isTransientError(err: unknown): boolean {
   if (!err) return false;
 
   if (err instanceof ApiError) {
-    if (err.status === 429) return false;
     return err.isTransient;
   }
 
-  const anyErr = err as { status?: number; message?: string };
+  const anyErr = err as { status?: number; message?: string; isTransient?: boolean };
+  if (typeof anyErr.isTransient === "boolean") {
+    return anyErr.isTransient;
+  }
+
   if (anyErr.status === 429) {
     return false;
   }
@@ -162,8 +168,13 @@ async function rawFetchJson<T>(url: string, init: RequestInit = {}): Promise<T> 
   let res: Response;
   try {
     res = await fetch(`${API_BASE}${url}`, {
+      cache: "no-store",
       ...init,
-      headers,
+      headers: {
+        "Cache-Control": "no-cache",
+        "Pragma": "no-cache",
+        ...headers,
+      },
       credentials: "include",
     });
   } catch (netErr: any) {
@@ -176,8 +187,10 @@ async function rawFetchJson<T>(url: string, init: RequestInit = {}): Promise<T> 
   if (!res.ok) {
     let errMessage = "";
     let data: any = null;
+    let isJson = false;
     try {
       data = await res.json();
+      isJson = true;
       if (data.message && typeof data.message === "string") {
         errMessage = data.message;
       } else if (data.error && typeof data.error === "string") {
@@ -187,9 +200,18 @@ async function rawFetchJson<T>(url: string, init: RequestInit = {}): Promise<T> 
       // Body was not JSON (e.g. proxy HTML response for 429, 502, 503, 504)
     }
 
+    const renderRouting = (res.headers.get("x-render-routing") || "").toLowerCase();
+    const isHibernate = renderRouting.includes("hibernate");
+
+    // Distinguish genuine backend application rate limits from edge proxy/hibernation rate limits
+    const isAppRateLimit = res.status === 429 && isJson && data?.error === "TOO_MANY_REQUESTS";
+    const isTransientPlatform429 = res.status === 429 && (!isAppRateLimit || isHibernate);
+
     if (!errMessage) {
-      if (res.status === 429) {
+      if (isAppRateLimit) {
         errMessage = "Too many attempts. Please wait a moment and try again.";
+      } else if (isTransientPlatform429) {
+        errMessage = "The PrepKIT server is waking up from sleep. This may take a few moments.";
       } else if (res.status === 502 || res.status === 503 || res.status === 504) {
         errMessage = "We couldn't connect to the PrepKIT server. Please try again in a moment.";
       } else if (res.status === 401) {
@@ -203,7 +225,8 @@ async function rawFetchJson<T>(url: string, init: RequestInit = {}): Promise<T> 
       }
     }
 
-    throw new ApiError(errMessage, res.status, data);
+    const isTransient = res.status === 429 ? isTransientPlatform429 : undefined;
+    throw new ApiError(errMessage, res.status, data, isTransient);
   }
 
   return await res.json();
@@ -238,8 +261,8 @@ export async function fetchJson<T>(url: string, options: FetchJsonOptions = {}):
       }
       return result;
     } catch (err: any) {
-      // Fast abort: Never retry 429 rate limit errors or non-transient errors
-      if (err?.status === 429 || (err instanceof ApiError && err.status === 429)) {
+      // Fast abort: Never retry non-transient client/validation/auth errors
+      if (!isTransientError(err)) {
         if (attempt > 0 && onRetry) {
           onRetry({
             attempt: 0,

@@ -324,4 +324,36 @@ describe("Authentication & Persistence API Integration Tests", () => {
       process.env.NODE_ENV = prevNodeEnv;
     }
   });
+
+  it("extracts real client IP from X-Forwarded-For leftmost entry and isolates reverse proxy users", async () => {
+    const { getClientIp } = await import("../src/server/rateLimiter.js");
+
+    // Case 1: Next.js rewrite on Render: client IP is leftmost, proxy IP is rightmost
+    const req1 = {
+      headers: {
+        "x-forwarded-for": "203.0.113.195, 74.220.48.235",
+        "cf-connecting-ip": "74.220.48.235",
+      },
+      socket: { remoteAddress: "10.0.0.1" },
+    } as any;
+    expect(getClientIp(req1)).toBe("203.0.113.195");
+
+    // Case 2: IPv6-mapped IPv4 prefix stripping
+    const req2 = {
+      headers: {
+        "x-forwarded-for": "::ffff:198.51.100.42",
+      },
+      socket: { remoteAddress: "127.0.0.1" },
+    } as any;
+    expect(getClientIp(req2)).toBe("198.51.100.42");
+
+    // Case 3: Direct Cloudflare without intermediate proxy
+    const req3 = {
+      headers: {
+        "cf-connecting-ip": "198.51.100.99",
+      },
+      socket: { remoteAddress: "127.0.0.1" },
+    } as any;
+    expect(getClientIp(req3)).toBe("198.51.100.99");
+  });
 });
